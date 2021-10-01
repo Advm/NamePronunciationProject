@@ -134,7 +134,7 @@ class Root_Win(Gui_Win):
 
         # Formatting
         self._frame.grid(row=0, column=0)
-        self._intro_lbl.grid(row = 0, column = 0, columnspan = 4)
+        self._intro_lbl.grid(row = 0, column = 0, columnspan = 4, pady=(0,20))
         self._quit_button.grid(row = 1, column = 0)
         self._continue_button.grid(row=1, column=3)
         self._manual_button.grid(row=1, column=1)
@@ -154,11 +154,54 @@ class Root_Win(Gui_Win):
             # Hide root window, then call child's mainloop
             self.hide()
             next_window.mainloop()
-        # File Entry - Not yet implemented - idea is Filedialog for input file,
-        # file dialog for output file. Call to link_func with input
-        # Message box/Progress Bar? when complete
+        # File entry - File Dialogs, one for input, one for out
+        # Takes csv files as input (excel was getting some errors)
+        # Can write to csv or excel (excel takes a while)
         else:
-            pass
+            done = False
+            while not done:
+                inputname = filedialog.askopenfilename(title="Select an input file",
+                                                       filetypes=[("CSV",".csv")])
+                if inputname == "":
+                    out = messagebox.showinfo(type="okcancel",
+                                              message="Please select a file")
+
+                    # exit file entry
+                    if out == "cancel":
+                        return
+
+                else:
+                    done = True
+
+            in_file = open(inputname, encoding="UTF-8")
+            dataframe = pd.read_csv(in_file, sep=",", names=["Word", "IPA"])
+            result = self._link_cmd(dataframe)
+            done = False
+            while not done:
+                outputname = filedialog.asksaveasfilename(title="Select an " \
+                                        "output file",
+                                        filetypes = [("CSV", ".csv"),
+                                                     ("Excel", ".xlsx")])
+                if outputname == "":
+                    out = messagebox.showinfo(type="okcancel",
+                                              message="Please select a file")
+                    # exit file entry
+                    if out == "cancel":
+                        return
+                else:
+                    done = True
+
+            if (outputname.split('.'))[1] == "csv":
+                result.to_csv(outputname, index=False,
+                              header=["Name", "Score"])
+            else:
+                result.to_excel(outputname, index=False,
+                                header=["Name", "Score"])
+
+            messagebox.showinfo(message="Done!")
+
+
+
 
     def exit_program(self):
         """
@@ -211,8 +254,8 @@ class Manual_Entry_Win(Gui_Win):
 
         # Formatting
         self._frame.grid(row=0, column=0)
-        self._lbl.grid(row=0, column=0)
-        self._entry_field.grid(row=0, column=1)
+        self._lbl.grid(row=0, column=0, pady=10)
+        self._entry_field.grid(row=0, column=1, pady=10)
         self._back_button.grid(row=1, column=0)
         self._enter_button.grid(row=1, column=1)
 
@@ -312,12 +355,15 @@ def write_dataframe(filename, dataframe):
 
 #------------------------------------------------------------------------------
 
+def print_ret(x):
+    print(x)
+    return x
 
 def main():
     """
     Main just sets up the root window and calls it's mainloop
     """
-    root = Root_Win(lambda x: x[0][0])
+    root = Root_Win(print_ret)
     root.mainloop()
 
 
