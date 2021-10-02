@@ -1,33 +1,6 @@
 from nameui import *
 from to_ipa import to_ipa
-    
-ipa_model = to_ipa()
-
-def main(words):
-    # <names> is a list of every name the user inputted
-    names = list(words["Word"])
-
-    # <ipa_names> is a list of the same length containing IPA transcriptions of each name
-    #   i.e., ipa_names[i] is an IPA transcription of names[i]
-    ipa_names = [ipa_model.ipa(name) for name in names]
-    print(ipa_names)
-
-
-    # --------------------
-    # TODO
-    # <IPA_NAMES> -> GRIFFIN'S TOOL
-
-    # <IPA_NAMES> -> JACK'S TOOL
-    
-    # Kenny run the corpus (our dictionary) through train_ngrams with both n = 1 and n = 2
-    
-    # call ngrams_phoneme_algorithm and change "corpus" to two dictionary arguments taken
-    # in (I was just computing them inside the function for testing)
-
-    # COMBINE SCORES
-
-    # GWEN: RETURN THAT SCORE
-    return words
+import csv
 
 def ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
@@ -55,11 +28,9 @@ def train_ngrams(list_str, n):
                 mydict.update({gram: num + 1})
     return mydict, population
 
-def ngrams_phoneme_algorithm(corpus, phoneme):
+def ngrams_phoneme_algorithm(un_gram, bi_gram, phoneme):
     """ Given a corpus and a phoneme, *currently* compute the average bi-gram probability
         of the word. """
-    bi_gram, bi_gram_pop = train_ngrams(corpus, 2)
-    un_gram, un_gram_pop = train_ngrams(corpus, 1)
     word_bigrams = ngrams(phoneme, 2)
 
     average_bigram_prob = 0
@@ -78,6 +49,45 @@ def ngrams_phoneme_algorithm(corpus, phoneme):
     #average_corpus_prob = len(bi_gram) / un_gram_pop
 
     return average_bigram_prob
+
+
+
+
+
+ipa_model = to_ipa()
+with open("ipa_dicts/english-general_american.csv", 'r') as f:
+    reader = csv.reader(f)
+    corpus = [w[1:-1] for row in reader for w in row[1].split(', ')]
+bi_grams, _ = train_ngrams(corpus, 2)
+un_grams, _ = train_ngrams(corpus, 1)
+
+def main(words):
+    # <names> is a list of every name the user inputted
+    names = list(words["Word"])
+
+    # <ipa_names> is a list of the same length containing IPA transcriptions of each name
+    #   i.e., ipa_names[i] is an IPA transcription of names[i]
+    ipa_names = [ipa_model.ipa(name)[1:-1] for name in names]
+    print(ipa_names)
+
+
+    # --------------------
+    # TODO
+    # <IPA_NAMES> -> GRIFFIN'S TOOL
+
+    # <IPA_NAMES> -> JACK'S TOOL
+    
+    # Kenny run the corpus (our dictionary) through train_ngrams with both n = 1 and n = 2
+
+    # call ngrams_phoneme_algorithm and change "corpus" to two dictionary arguments taken
+    # in (I was just computing them inside the function for testing)
+    scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, word) for word in words]
+    print(scores)
+
+    # COMBINE SCORES
+
+    # GWEN: RETURN THAT SCORE
+    return words
 
 if __name__ == '__main__':
     root = Root_Win(main)
