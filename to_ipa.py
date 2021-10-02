@@ -24,7 +24,7 @@ class to_ipa:
                     'IY': 'i',
                     'JH': 'dʒ',
                     'K': 'k',
-                    'L': 'l',
+                    'L': 'ɫ',
                     'M': 'm',
                     'N': 'n',
                     'NG': 'ŋ',
@@ -49,10 +49,16 @@ class to_ipa:
     def ipa(self, graphemes):
         """ Convert English graphemes to IPA. """
         word = "/"
-        for syl in syllabifyARPA(self.g2p(graphemes)):
-            word += self.find_stress(syl)
-            for phone in syl.split(" "):
+        arpa = self.g2p(graphemes)
+        try:
+            for syl in syllabifyARPA(arpa):
+                word += self.find_stress(syl)
+                for phone in syl.split(" "):
+                    word += self.map[phone[:2]]
+        except:
+            for phone in arpa:
                 word += self.map[phone[:2]]
+        
         return word + '/'
 
     def find_stress(self, syllable):
