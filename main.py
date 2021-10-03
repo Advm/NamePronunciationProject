@@ -1,13 +1,17 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
+<<<<<<< HEAD
 from isenglish import getoutput
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
+from tensorflow.keras ilmport layers
 
 model = tf.keras.models.load_model('IsAmericanEnglish')
 
+=======
+import math
+>>>>>>> 846c76167606090f8a828bbf2451b2533f9f4a3e
 
 def ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
@@ -35,27 +39,31 @@ def train_ngrams(list_str, n):
                 mydict.update({gram: num + 1})
     return mydict, population
 
-def ngrams_phoneme_algorithm(un_gram, bi_gram, phoneme):
-    """ Given a corpus and a phoneme, *currently* compute the average bi-gram probability
-        of the word. """
+def ngrams_phoneme_algorithm(phoneme):
+    """ Given a phoneme, compute the z-score from the average of the bi-gram calculations
+        and convert to a float between 0-1 """
     word_bigrams = ngrams(phoneme, 2)
 
     average_bigram_prob = 0
     for gram in word_bigrams:
         # If the corpus doesn't have this bi-gram, continue on to the next bi-gram. 
         # Might need to change the weight of this later but for now it seems fine 
-        if bi_gram.get(gram) == None:
+        if bi_grams.get(gram) == None:
             continue
 
-        average_bigram_prob += bi_gram.get(gram) / un_gram.get(gram[0])
+        average_bigram_prob += bi_grams.get(gram) / un_grams.get(gram[0]) 
+        #average_bigram_prob += bi_grams.get(gram) / bi_gram_pop
 
     # To make sure that the word isn't composed completely of bi-grams not found
     # in the corpus
     if average_bigram_prob != 0:
         average_bigram_prob = average_bigram_prob / len(word_bigrams)
-    #average_corpus_prob = len(bi_gram) / un_gram_pop
 
-    return average_bigram_prob
+    z_score = (average_bigram_prob - average_corpus_prob) / standard_deviation
+
+    answer = .5 * (math.erf(z_score / 2 ** .5) + 1) # https://stackoverflow.com/questions/2782284/function-to-convert-a-z-score-into-a-percentage
+
+    return answer #average_bigram_prob
 
 
 
@@ -65,8 +73,21 @@ ipa_model = to_ipa()
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
     corpus = [w[1:-1] for row in reader for w in row[1].split(', ')]
-bi_grams, _ = train_ngrams(corpus, 2)
+bi_grams, bi_gram_pop = train_ngrams(corpus, 2)
 un_grams, _ = train_ngrams(corpus, 1)
+
+#average_corpus_prob = len(bi_grams) / bi_gram_pop
+average_corpus_prob = 0
+for gram in bi_grams:
+    average_corpus_prob += bi_grams.get(gram) / un_grams.get(gram[0])
+average_corpus_prob = average_corpus_prob / bi_gram_pop
+
+standard_deviation = 0
+for gram in bi_grams:
+    standard_deviation += (bi_grams.get(gram) / un_grams.get(gram[0]) - average_corpus_prob) * (bi_grams.get(gram) / un_grams.get(gram[0]) - average_corpus_prob)
+    #standard_deviation += ((bi_grams.get(gram) / bi_gram_pop) - average_corpus_prob) * ((bi_grams.get(gram) / bi_gram_pop) - average_corpus_prob)
+standard_deviation = standard_deviation / (bi_gram_pop - 1)
+standard_deviation = math.sqrt(standard_deviation)
 
 def main(words):
     # <names> is a list of every name the user inputted
@@ -78,7 +99,7 @@ def main(words):
     print(ipa_names)
 
     # Get n-grams scores
-    ngrams_scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, name) for name in names]
+    ngrams_scores = [ngrams_phoneme_algorithm(name) for name in names]
     print(ngrams_scores)
 
     # --------------------
