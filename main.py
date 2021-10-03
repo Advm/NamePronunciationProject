@@ -63,32 +63,31 @@ un_grams, _ = train_ngrams(corpus, 1)
 
 def main(words):
     # <names> is a list of every name the user inputted
-    names = list(words["Word"])
+    names = list(words[0])
 
     # <ipa_names> is a list of the same length containing IPA transcriptions of each name
     #   i.e., ipa_names[i] is an IPA transcription of names[i]
     ipa_names = [ipa_model.ipa(name)[1:-1] for name in names]
     print(ipa_names)
 
+    # Get n-grams scores
+    ngrams_scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, name) for name in names]
+    print(ngrams_scores)
 
     # --------------------
-    # TODO
+    # TODO    
     # <IPA_NAMES> -> GRIFFIN'S TOOL
-
-    # <IPA_NAMES> -> JACK'S TOOL
-    
-    # Kenny run the corpus (our dictionary) through train_ngrams with both n = 1 and n = 2
-
-    # call ngrams_phoneme_algorithm and change "corpus" to two dictionary arguments taken
-    # in (I was just computing them inside the function for testing)
-  
-    scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, name) for name in names]
-    print(scores)
+    nn_scores = [] # left blank
+    print(nn_scores)
 
     # COMBINE SCORES
+    final_scores = []
+    for i in range(len(ngrams_scores)):
+        # apply some func to nn_scores[i] and ngrams_scores[i], append result to final_scores
+        pass
 
-    # GWEN: RETURN THAT SCORE
-    return scores
+    # GWEN: RETURN THAT SCORE FORMATTED AS DATAFRAME
+    return final_scores
 
 if __name__ == '__main__':
     root = Root_Win(main)
