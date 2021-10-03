@@ -87,7 +87,7 @@ def main(words):
     # COMBINE SCORES
 
     # GWEN: RETURN THAT SCORE
-    return words
+    return scores
 
 if __name__ == '__main__':
     root = Root_Win(main)
