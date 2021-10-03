@@ -1,17 +1,16 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-<<<<<<< HEAD
 from isenglish import getoutput
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras ilmport layers
+from tensorflow.keras import layers
 
 model = tf.keras.models.load_model('IsAmericanEnglish')
 
-=======
+
 import math
->>>>>>> 846c76167606090f8a828bbf2451b2533f9f4a3e
+
 
 def ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
