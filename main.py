@@ -55,7 +55,7 @@ def ngrams_phoneme_algorithm(un_gram, bi_gram, phoneme):
 
 
 ipa_model = to_ipa()
-with open("ipa_dicts/english-general_american.csv", 'r') as f:
+with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
     corpus = [w[1:-1] for row in reader for w in row[1].split(', ')]
 bi_grams, _ = train_ngrams(corpus, 2)
@@ -81,7 +81,8 @@ def main(words):
 
     # call ngrams_phoneme_algorithm and change "corpus" to two dictionary arguments taken
     # in (I was just computing them inside the function for testing)
-    scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, word) for word in words]
+  
+    scores = [ngrams_phoneme_algorithm(un_grams, bi_grams, name) for name in names]
     print(scores)
 
     # COMBINE SCORES
