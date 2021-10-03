@@ -62,9 +62,6 @@ def ngrams_phoneme_algorithm(phoneme):
     return answer #average_bigram_prob
 
 
-
-
-
 ipa_model = to_ipa()
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
@@ -102,17 +99,9 @@ def main(words):
     nn_scores = getoutput(ipa_names, model)
     #print(nn_scores)
 
-    # COMBINE SCORES
-    final_scores = []
-    for i in range(len(ngrams_scores)):
-        final_scores.append((nn_scores[i] + ngrams_scores[i]) / 2)
+    final_scores = [round(((nn_scores[i] + ngrams_scores[i]) / 2) * 100, 2) for i in range(len(ngrams_scores))]
 
-    #print(final_scores)
-    result = pd.DataFrame(final_scores)
-    result2 = pd.DataFrame(names)
-    result = pd.concat([result, result2], axis=1, ignore_index=True)
-    # GWEN: RETURN THAT SCORE FORMATTED AS DATAFRAME
-    return result
+    return pd.concat([pd.DataFrame(names), pd.DataFrame(final_scores)], axis=1, ignore_index=True)
 
 if __name__ == '__main__':
     root = Root_Win(main)
