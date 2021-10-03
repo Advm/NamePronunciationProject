@@ -18,7 +18,7 @@ def ngrams(str, n):
     return answer
 
 def train_ngrams(list_str, n):
-    """ Given a list of strings, convert into a dictionary and keep track 
+    """ Given a list of strings, convert into a dictionary and keep track
     of the number of occurances
     Also keeps track of the number of grams (which is different from the
     number of distinct grams which can get obtained using .len())"""
@@ -42,12 +42,12 @@ def ngrams_phoneme_algorithm(phoneme):
 
     average_bigram_prob = 0
     for gram in word_bigrams:
-        # If the corpus doesn't have this bi-gram, continue on to the next bi-gram. 
-        # Might need to change the weight of this later but for now it seems fine 
+        # If the corpus doesn't have this bi-gram, continue on to the next bi-gram.
+        # Might need to change the weight of this later but for now it seems fine
         if bi_grams.get(gram) == None:
             continue
 
-        average_bigram_prob += bi_grams.get(gram) / un_grams.get(gram[0]) 
+        average_bigram_prob += bi_grams.get(gram) / un_grams.get(gram[0])
         #average_bigram_prob += bi_grams.get(gram) / bi_gram_pop
 
     # To make sure that the word isn't composed completely of bi-grams not found
@@ -108,9 +108,11 @@ def main(words):
         final_scores.append((nn_scores[i] + ngrams_scores[i]) / 2)
 
     print(final_scores)
-
+    result = pd.DataFrame(final_scores)
+    result2 = pd.DataFrame(names)
+    result = pd.concat([result, result2], axis=1, ignore_index=True)
     # GWEN: RETURN THAT SCORE FORMATTED AS DATAFRAME
-    return final_scores
+    return result
 
 if __name__ == '__main__':
     root = Root_Win(main)
