@@ -92,22 +92,22 @@ def main(words):
     # <ipa_names> is a list of the same length containing IPA transcriptions of each name
     #   i.e., ipa_names[i] is an IPA transcription of names[i]
     ipa_names = [ipa_model.ipa(name)[1:-1] for name in names]
-    print(ipa_names)
+    #print(ipa_names)
 
     # Get n-grams scores
     ngrams_scores = [ngrams_phoneme_algorithm(name) for name in names]
-    print(ngrams_scores)
+    #print(ngrams_scores)
 
     # get neural net scores
     nn_scores = getoutput(ipa_names, model)
-    print(nn_scores)
+    #print(nn_scores)
 
     # COMBINE SCORES
     final_scores = []
     for i in range(len(ngrams_scores)):
         final_scores.append((nn_scores[i] + ngrams_scores[i]) / 2)
 
-    print(final_scores)
+    #print(final_scores)
     result = pd.DataFrame(final_scores)
     result2 = pd.DataFrame(names)
     result = pd.concat([result, result2], axis=1, ignore_index=True)
