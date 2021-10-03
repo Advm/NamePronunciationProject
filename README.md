@@ -5,8 +5,6 @@ Tkinter: In python by default
 
 Pandas: by default: pip install pandas
 
-openpyxl for writing to Excel files: pip install openpyxl
-
 g2p-en (https://pypi.org/project/g2p-en/) 
 
 arpabet-syllabifier (https://github.com/vgautam/arpabet-syllabifier).

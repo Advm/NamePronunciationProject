@@ -174,15 +174,19 @@ class Root_Win(Gui_Win):
                     done = True
 
             in_file = open(inputname, encoding="UTF-8")
-            dataframe = pd.read_csv(in_file, sep=",", names=["Word", "IPA"])
+            dataframe = pd.read_csv(in_file, sep=",", header=None)
             result = self._link_cmd(dataframe)
             done = False
             while not done:
-                outputname = filedialog.asksaveasfilename(title="Select an " \
-                                        "output file",
-                                        filetypes = [("CSV", ".csv"),
-                                                     ("Excel", ".xlsx")])
-                if outputname == "":
+                try:
+                    output_file = filedialog.asksaveasfile(title="Select an"\
+                                  "output file", initialfile="Untitled.csv",
+                                  filetypes = [("CSV", ".csv")],
+                                  defaultextension='.csv')
+                except PermissionError:
+                    raise PermissionError("Do you have the file opened?")
+
+                if output_file == None:
                     out = messagebox.showinfo(type="okcancel",
                                               message="Please select a file")
                     # exit file entry
@@ -191,12 +195,13 @@ class Root_Win(Gui_Win):
                 else:
                     done = True
 
-            if (outputname.split('.'))[1] == "csv":
-                result.to_csv(outputname, index=False,
-                              header=["Name", "Score"])
-            else:
-                result.to_excel(outputname, index=False,
-                                header=["Name", "Score"])
+            # had to add the line_terminator = \n because for some reason,
+            # there is already a \r at the end of the row. I tried
+            # getting rid of it, but it seems to happen in the to_csv
+            # method? Unsure. 
+            result.to_csv(output_file, index=False,
+                          header=["Name", "Score"],
+                          line_terminator = '\n')
 
             messagebox.showinfo(message="Done!")
 
@@ -279,7 +284,9 @@ class Manual_Entry_Win(Gui_Win):
             self._user_in.set("")
             in_data = pd.DataFrame([user_input])
             result = self._link_cmd(in_data)
-            messagebox.showinfo(message=user_input + ": " + str(result))
+            messagebox.showinfo(message=str(result.iloc[0][0]) + ": " + \
+                                str(result.iloc[0][1]) + "\n(From 0-100, 100" \
+                                " being hard to pronounce, 0 being easy)")
         else:
             messagebox.showinfo(message="Please enter something.")
 
@@ -357,12 +364,14 @@ def write_dataframe(filename, dataframe):
 
 def print_ret(x):
     print(x)
-    return x
+    column2 = pd.DataFrame([2] * len(x.index))
+    return pd.concat([x, column2], axis=1, ignore_index=True)
 
 def main():
     """
     Main just sets up the root window and calls it's mainloop
     """
+
     root = Root_Win(print_ret)
     root.mainloop()
 
