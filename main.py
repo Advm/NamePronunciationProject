@@ -1,17 +1,14 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-<<<<<<< HEAD
 from isenglish import getoutput
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras ilmport layers
+from tensorflow.keras import layers
 
 model = tf.keras.models.load_model('IsAmericanEnglish')
 
-=======
 import math
->>>>>>> 846c76167606090f8a828bbf2451b2533f9f4a3e
 
 def ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
@@ -102,17 +99,16 @@ def main(words):
     ngrams_scores = [ngrams_phoneme_algorithm(name) for name in names]
     print(ngrams_scores)
 
-    # --------------------
-    # TODO    
-    # <IPA_NAMES> -> GRIFFIN'S TOOL
-    nn_scores = getoutput(ipa_names, model) # left blank
+    # get neural net scores
+    nn_scores = getoutput(ipa_names, model)
     print(nn_scores)
 
     # COMBINE SCORES
     final_scores = []
     for i in range(len(ngrams_scores)):
-        # apply some func to nn_scores[i] and ngrams_scores[i], append result to final_scores
-        pass
+        final_scores.append((nn_scores[i] + ngrams_scores[i]) / 2)
+
+    print(final_scores)
 
     # GWEN: RETURN THAT SCORE FORMATTED AS DATAFRAME
     return final_scores
