@@ -198,7 +198,7 @@ class Root_Win(Gui_Win):
             # had to add the line_terminator = \n because for some reason,
             # there is already a \r at the end of the row. I tried
             # getting rid of it, but it seems to happen in the to_csv
-            # method? Unsure. 
+            # method? Unsure.
             result.to_csv(output_file, index=False,
                           header=["Name", "Score"],
                           line_terminator = '\n')
@@ -285,7 +285,7 @@ class Manual_Entry_Win(Gui_Win):
             in_data = pd.DataFrame([user_input])
             result = self._link_cmd(in_data)
             messagebox.showinfo(message=str(result.iloc[0][0]) + ": " + \
-                                str(result.iloc[0][1]) + "\n(From 0-100, 100" \
+                                str(result.iloc[0][1]) + "%\n(From 0-100, 100" \
                                 " being hard to pronounce, 0 being easy)")
         else:
             messagebox.showinfo(message="Please enter something.")
