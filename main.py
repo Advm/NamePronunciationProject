@@ -92,7 +92,7 @@ def main(words):
     #print(ipa_names)
 
     # Get n-grams scores
-    ngrams_scores = [ngrams_phoneme_algorithm(name) for name in names]
+    ngrams_scores = [ngrams_phoneme_algorithm(name) for name in ipa_names]
     #print(ngrams_scores)
 
     # get neural net scores
