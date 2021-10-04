@@ -100,6 +100,7 @@ def main(words):
     #print(nn_scores)
 
     final_scores = [round(((nn_scores[i] + ngrams_scores[i]) / 2) * 100, 2) for i in range(len(ngrams_scores))]
+    final_scores = [round(100 - x, 2) for x in final_scores]
 
     return pd.concat([pd.DataFrame(names), pd.DataFrame(final_scores)], axis=1, ignore_index=True)
 
