@@ -35,6 +35,21 @@ def train_ngrams(list_str, n):
                 mydict.update({gram: num + 1})
     return mydict, population
 
+def ngrams_word_algorithm(word):
+    """ Given a word, compute the tri_grams and get the average tri-gram value of the word 
+        from the corpus """
+    word_trigrams = ngrams(word, 3)
+    average_trigram_prob = 0
+    for gram in word_trigrams:
+        average_trigram_prob += tri_grams.get(gram) / bi_grams.get(gram[:-1])
+
+    # To make sure that the word isn't composed completely of tri-grams not found
+    # in the corpus
+    if average_trigram_prob != 0:
+        average_trigram_prob = average_trigram_prob / len(word_trigrams)
+
+    return average_trigram_prob 
+
 def ngrams_phoneme_algorithm(phoneme):
     """ Given a phoneme, compute the z-score from the average of the bi-gram calculations
         and convert to a float between 0-1 """
@@ -65,7 +80,8 @@ def ngrams_phoneme_algorithm(phoneme):
 ipa_model = to_ipa()
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
-    corpus = [w[1:-1] for row in reader for w in row[1].split(', ')]
+    corpus = [w[1:-1] for row in reader for w in row[1].split(', ')] # [w[1:-1] for row in reader for w in row[0].split(', ')] for words
+tri_grams, tri_gram_pop = train_ngrams(corpus, 3)
 bi_grams, bi_gram_pop = train_ngrams(corpus, 2)
 un_grams, _ = train_ngrams(corpus, 1)
 
@@ -93,6 +109,7 @@ def main(words):
 
     # Get n-grams scores
     ngrams_scores = [ngrams_phoneme_algorithm(name) for name in ipa_names]
+    #word_ngrams_scores = [ngrams_word_algorithm(name) for name in names]
     #print(ngrams_scores)
 
     # get neural net scores
