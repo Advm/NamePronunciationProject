@@ -31,7 +31,7 @@ def getoutput(wordlist, model):
     #print(prediction)
     return output
 
-print("Loading Model")
-model = tf.keras.models.load_model('IsAmericanEnglish')
+# print("Loading Model")
+# model = tf.keras.models.load_model('IsAmericanEnglish')
 
-print(getoutput(["ɹɪˈsɪpɹəˌkeɪtɪŋ","ɪnˈkɔɹpɝˌeɪtɪŋ","hɪstɝi","ʔapˌʃɾɛkʊŋsmɪtel","ɒːtæʃneʃɒːn","²'øːvɛroːɖɳad"],model))
+# print(getoutput(["ɹɪˈsɪpɹəˌkeɪtɪŋ","ɪnˈkɔɹpɝˌeɪtɪŋ","hɪstɝi","ʔapˌʃɾɛkʊŋsmɪtel","ɒːtæʃneʃɒːn","²'øːvɛroːɖɳad"],model))
