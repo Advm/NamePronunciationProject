@@ -1,13 +1,13 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-from isenglish import getoutput
+from NNModel import getoutput, convertToModelFormat
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import math
 
-model = tf.keras.models.load_model('IsAmericanEnglish')
+ISAMERICANENGLISH = tf.keras.models.load_model('IsAmericanEnglish')
 
 def ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
@@ -113,7 +113,9 @@ def main(words):
     #print(ngrams_scores)
 
     # get neural net scores
-    nn_scores = getoutput(ipa_names, model)
+    phonemeNN = convertToModelFormat(ISAMERICANENGLISH, pd.read_csv('Allchars.csv'))
+    nn_scores = phonemeNN.convert(ipa_names)
+    print(nn_scores)
     #print(nn_scores)
 
     final_scores = [round(((nn_scores[i] + ngrams_scores[i]) / 2) * 100, 2) for i in range(len(ngrams_scores))]
