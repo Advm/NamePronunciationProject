@@ -10,7 +10,7 @@ from random import choice
 
 ISAMERICANENGLISH = tf.keras.models.load_model('IsAmericanEnglish')
 
-def ngrams(str, n):
+def generate_ngrams(str, n):
     """ Given a string and an n, return a list of all grams of that length"""
     answer = []
     for i in range(0, len(str) - n + 1):
@@ -18,7 +18,7 @@ def ngrams(str, n):
         answer.append(str[i:end])
     return answer
 
-def train_ngrams(list_str, n):
+def generate_ngram_dictionary(list_str, n):
     """ Given a list of strings, convert into a dictionary and keep track
     of the number of occurances
     Also keeps track of the number of grams (which is different from the
@@ -26,7 +26,7 @@ def train_ngrams(list_str, n):
     population = 0
     mydict = {}
     for str in list_str:
-        grams = ngrams(str, n)
+        grams = generate_ngrams(str, n)
         for gram in grams:
             population += 1
             if mydict.get(gram) is None:
@@ -39,7 +39,7 @@ def train_ngrams(list_str, n):
 def ngrams_word_algorithm(word):
     """ Given a word, compute the tri_grams and get the average tri-gram value of the word 
         from the corpus """
-    word_trigrams = ngrams(word, 3)
+    word_trigrams = generate_ngrams(word, 3)
     average_trigram_prob = 0
     for gram in word_trigrams:
         average_trigram_prob += tri_grams.get(gram) / bi_grams.get(gram[:-1])
@@ -54,7 +54,7 @@ def ngrams_word_algorithm(word):
 def ngrams_phoneme_algorithm(phoneme):
     """ Given a phoneme, compute the z-score from the average of the bi-gram calculations
         and convert to a float between 0-1 """
-    word_bigrams = ngrams(phoneme, 2)
+    word_bigrams = generate_ngrams(phoneme, 2)
 
     average_bigram_prob = 0
     for gram in word_bigrams:
@@ -82,9 +82,9 @@ ipa_model = to_ipa()
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
     corpus = [w[1:-1] for row in reader for w in row[1].split(', ')] # [w[1:-1] for row in reader for w in row[0].split(', ')] for words
-tri_grams, tri_gram_pop = train_ngrams(corpus, 3)
-bi_grams, bi_gram_pop = train_ngrams(corpus, 2)
-un_grams, _ = train_ngrams(corpus, 1)
+tri_grams, tri_gram_pop = generate_ngram_dictionary(corpus, 3)
+bi_grams, bi_gram_pop = generate_ngram_dictionary(corpus, 2)
+un_grams, _ = generate_ngram_dictionary(corpus, 1)
 
 #average_corpus_prob = len(bi_grams) / bi_gram_pop
 average_corpus_prob = 0
