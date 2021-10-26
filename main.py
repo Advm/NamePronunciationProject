@@ -7,97 +7,17 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import math
 from random import choice
+from ngrams import ngrams
 
 ISAMERICANENGLISH = tf.keras.models.load_model('IsAmericanEnglish')
-
-def generate_ngrams(str, n):
-    """ Given a string and an n, return a list of all grams of that length"""
-    answer = []
-    for i in range(0, len(str) - n + 1):
-        end = i + n
-        answer.append(str[i:end])
-    return answer
-
-def generate_ngram_dictionary(list_str, n):
-    """ Given a list of strings, convert into a dictionary and keep track
-    of the number of occurances
-    Also keeps track of the number of grams (which is different from the
-    number of distinct grams which can get obtained using .len())"""
-    population = 0
-    mydict = {}
-    for str in list_str:
-        grams = generate_ngrams(str, n)
-        for gram in grams:
-            population += 1
-            if mydict.get(gram) is None:
-                mydict.update({gram: 1})
-            else:
-                num = mydict.get(gram)
-                mydict.update({gram: num + 1})
-    return mydict, population
-
-def ngrams_word_algorithm(word):
-    """ Given a word, compute the tri_grams and get the average tri-gram value of the word 
-        from the corpus """
-    word_trigrams = generate_ngrams(word, 3)
-    average_trigram_prob = 0
-    for gram in word_trigrams:
-        average_trigram_prob += tri_grams.get(gram) / bi_grams.get(gram[:-1])
-
-    # To make sure that the word isn't composed completely of tri-grams not found
-    # in the corpus
-    if average_trigram_prob != 0:
-        average_trigram_prob = average_trigram_prob / len(word_trigrams)
-
-    return average_trigram_prob 
-
-def ngrams_phoneme_algorithm(phoneme):
-    """ Given a phoneme, compute the z-score from the average of the bi-gram calculations
-        and convert to a float between 0-1 """
-    word_bigrams = generate_ngrams(phoneme, 2)
-
-    average_bigram_prob = 0
-    for gram in word_bigrams:
-        # If the corpus doesn't have this bi-gram, continue on to the next bi-gram.
-        # Might need to change the weight of this later but for now it seems fine
-        if bi_grams.get(gram) == None:
-            continue
-
-        average_bigram_prob += bi_grams.get(gram) / un_grams.get(gram[0])
-        #average_bigram_prob += bi_grams.get(gram) / bi_gram_pop
-
-    # To make sure that the word isn't composed completely of bi-grams not found
-    # in the corpus
-    if average_bigram_prob != 0:
-        average_bigram_prob = average_bigram_prob / len(word_bigrams)
-
-    z_score = (average_bigram_prob - average_corpus_prob) / standard_deviation
-
-    answer = .5 * (math.erf(z_score / 2 ** .5) + 1) # https://stackoverflow.com/questions/2782284/function-to-convert-a-z-score-into-a-percentage
-
-    return answer #average_bigram_prob
-
 
 ipa_model = to_ipa()
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     reader = csv.reader(f)
     corpus = [w[1:-1] for row in reader for w in row[1].split(', ')] # [w[1:-1] for row in reader for w in row[0].split(', ')] for words
-tri_grams, tri_gram_pop = generate_ngram_dictionary(corpus, 3)
-bi_grams, bi_gram_pop = generate_ngram_dictionary(corpus, 2)
-un_grams, _ = generate_ngram_dictionary(corpus, 1)
-
-#average_corpus_prob = len(bi_grams) / bi_gram_pop
-average_corpus_prob = 0
-for gram in bi_grams:
-    average_corpus_prob += bi_grams.get(gram) / un_grams.get(gram[0])
-average_corpus_prob = average_corpus_prob / bi_gram_pop
-
-standard_deviation = 0
-for gram in bi_grams:
-    standard_deviation += (bi_grams.get(gram) / un_grams.get(gram[0]) - average_corpus_prob) * (bi_grams.get(gram) / un_grams.get(gram[0]) - average_corpus_prob)
-    #standard_deviation += ((bi_grams.get(gram) / bi_gram_pop) - average_corpus_prob) * ((bi_grams.get(gram) / bi_gram_pop) - average_corpus_prob)
-standard_deviation = standard_deviation / (bi_gram_pop - 1)
-standard_deviation = math.sqrt(standard_deviation)
+ 
+#this is how ngrams object can be used, still need to implement the algorithms so right now all it can do is create a dictionary
+#bi_gram = ngrams(corpus, 2)
 
 def main(words):
     # <names> is a list of every name the user inputted
