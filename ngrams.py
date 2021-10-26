@@ -33,6 +33,17 @@ class ngrams:
         self.population = population
         self.dictionary = mydict
         return 
+    
+    def generate_probability(self, word):
+        """ Given a word, compute the average gram probability """
+        grams = self.generate_ngrams(word)
+        average_gram_probability = 0
+        for gram in grams:
+            average_gram_probability += self.dictionary.get(gram) / self.population
+        
+        if average_gram_probability != 0:
+            average_gram_probability = average_gram_probability / len(grams)
+        return average_gram_probability
 
 # data = ["hello", "world", "Ihope", "thisworks"]
 # bi_gram = ngrams(data, 2)
