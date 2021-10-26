@@ -4,7 +4,7 @@ class ngrams:
         self.length = length
         self.population = 0
         self.dictionary = {}
-        self.generate_ngram_dictionary()
+        self._generate_ngram_dictionary()
         
     def generate_ngrams(self, str):
         """ Given a string and an n, return a list of all grams of that length"""
@@ -14,7 +14,7 @@ class ngrams:
             answer.append(str[i:end])
         return answer
 
-    def generate_ngram_dictionary(self):
+    def _generate_ngram_dictionary(self):
         """ Given a list of strings, convert into a dictionary and keep track
         of the number of occurances
         Also keeps track of the number of grams (which is different from the
