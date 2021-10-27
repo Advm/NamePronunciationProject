@@ -1,375 +1,599 @@
 import sys
 import pandas as pd
+from os import path
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+import threading, traceback, time
+# Makes sure we are running a threaed tkinter build
+Tcl().eval('set tcl_platform(threaded)')
 
+class GUI_Frame:
+    """
+    Parent Class for all GUI Frames. Provides disable and
+    enable.
+    """
 
-class Gui_Win:
-    """
-    Parent Class for all GUI windows. Provides destory, get_root, show, hide,
-    mainloop, and on_closing
-    """
-    def __init__(self, link_cmd, parent=None):
+    def __init__(self, parent, text = ""):
         """
-        Window constructor. Sets up parent variable, link_cmd, the window
-        itself, it's frame, and a protocol for 'xing' out of a window,
-        which runs the Window's on_closing method.
-
-        @params: link_cmd: The command to fire on the user's input. Intended to
-                           link UI to other parts of the program.
-                 parent: The parent window of this window.
-        @returns: Nothing
+        Constructor for GUI Frames. Sets the parent attribute and
+        Creates the ttk (Label)Frame
+        @params - parent: The parent object of the frame. (Root_Win)
+                - text: The text to display on the border of the frame
+        @returns A GUI_Frame Object
         """
         self._parent = parent
-        self._link_cmd = link_cmd
+        self._frame = ttk.Labelframe(self._parent.get_win(),
+                                     padding = "5 5 10 10", text=text)
 
-        if self._parent:
-            # Creating a child window
-            self._win = Toplevel(self._parent.get_win())
-        else:
-            # Root window
-            self._win = Tk()
-        self._win.title("Name Pronuncation Program")
-        self._frame = ttk.Frame(self._win, padding = "5 5 10 10")
-
-        # Binds the event that fires when a window is 'x'ed out to the
-        # on closing method
-        self._win.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-    def destroy(self):
+    def disable(self):
         """
-        Method destroys the object's Tkinter window. Ends any mainloop
-        associated with the window.
+        Method disables(greys out) each child widget in the frame
         @params - self
         @returns - None
         """
-        self._win.destroy()
+        for child in self._frame.winfo_children():
+            child.configure(state='disable')
 
-    def get_win(self):
+    def enable(self):
         """
-        Method returns the self._win attribute of self.
-        @params - self
-        @returns - self._win: the Tkinter window of the object.
-        """
-        return self._win
-
-    def show(self):
-        """
-        Method is a wrapper for Tkinter's deiconify, which shows the
-        window.
+        Method enables each child widget in the frame
         @params - self
         @returns - None
         """
-        self._win.deiconify()
+        for child in self._frame.winfo_children():
+            child.configure(state='enable')
 
-    def hide(self):
-        """
-        Method is a wrapper for Tkinter's withdraw, which hides the
-        window.
-        @params - self
-        @returns - None
-        """
-        self._win.withdraw()
-
-    def mainloop(self):
-        """
-        Method is a wrapper for Tkinter's mainloop, which runs the event loop
-        associated with the window.
-        @params - self
-        @returns - None
-        """
-        self._win.mainloop()
-
-    def on_closing(self):
-        """
-        Method that is called when the 'WM_DELETE_WINDOW', or 'xing out',
-        window event is fired. Default is to destroy the window.
-        @params - self
-        @returns - None
-        """
-        self.destroy()
-
-class Root_Win(Gui_Win):
+class Intro_Frame(GUI_Frame):
     """
-    Class for the Root Window for the GUI.
-    This Window contains a 'quit' button, two radio buttons that indicate
-    which type of input the user would like to use(manual/file), and an
-    'continue' button, which continues according to their choice. It also
-    contains a text label for the user. This is a the Root of all other windows,
-    and the top eventloop. When other windows are called, this window is hidden.
+    Class representing the top-left frame, which currently
+    contains some text welcoming the user to the program. Will likely
+    eventually include options for the program.
     """
-    def __init__(self, link_cmd):
+
+    def __init__(self, parent):
         """
-        Root_Win constructor. Calls Gui_Win's constructor to set up base. Then
-        creates the label and the buttons and arranges them properly. Does not
-        take a parent object since it is the Root window.
-
-        @params: link_cmd: The command to fire on the user's input. Intended to
-                           link UI to other parts of the program.
-        @returns: Nothing
+        Constructor for Intro_Frames. Takes parent, passes to super's
+        constructor, creates the label, and places it in the frame.
+        @params - parent
+        @returns - An Intro_Frame Object
         """
-        # Call to parent class
-        super().__init__(link_cmd)
-        self._intro_lbl = ttk.Label(self._frame, text ="Hello! Welcome to " \
-                                    "the name pronuncation program!\nPlease " \
-                                    "select how you would like to enter names:",
-                                    font= ("Arial", 16))
-        # buttons
-        self._quit_button = ttk.Button(self._frame, text="Quit",
-                                       command=self.exit_program)
-        self._continue_button = ttk.Button(self._frame, text="Continue",
-                                           command=self.next_win)
+        super().__init__(parent, "Welcome & Options")
+        self._label = ttk.Label(self._frame, text="Hello! Welcome to " \
+                                "the name pronuncation program!")
+        # for debugging
+        self._thrd_button = ttk.Button(self._frame, text="threads",
+                                       command=self.count_threads)
+        self._label.grid(row = 0, column = 0)
+        self._thrd_button.grid(row = 1, column = 0)
+        # To add options........
 
-        # Variable to hold the value for the Radiobuttons
-        self._entry_choice = IntVar()
-        self._manual_button = ttk.Radiobutton(self._frame, text="Manual Entry",
-                                              variable=self._entry_choice,
-                                              value=0)
-        self._file_button = ttk.Radiobutton(self._frame, text="File Entry",
-                                            variable=self._entry_choice,
-                                            value=1)
-
-
-        # Formatting
-        self._frame.grid(row=0, column=0)
-        self._intro_lbl.grid(row = 0, column = 0, columnspan = 4, pady=(0,20))
-        self._quit_button.grid(row = 1, column = 0)
-        self._continue_button.grid(row=1, column=3)
-        self._manual_button.grid(row=1, column=1)
-        self._file_button.grid(row=1, column=2)
-
-    def next_win(self):
+    def count_threads(self):
         """
-        Method that is called when the continue button is pressed.
-        Checks which entry type was choosen, then executes that type accordingly
-        @params - self
-        @returns - None?
+        Debugging method
         """
-        # Manual Entry
-        if self._entry_choice.get() == 0:
-            # Create a window for manual entry
-            next_window = Manual_Entry_Win(self, self._link_cmd)
-            # Hide root window, then call child's mainloop
-            self.hide()
-            next_window.mainloop()
-        # File entry - File Dialogs, one for input, one for out
-        # Takes csv files as input (excel was getting some errors)
-        # Can write to csv or excel (excel takes a while)
-        else:
-            done = False
-            while not done:
-                inputname = filedialog.askopenfilename(title="Select an input file",
-                                                       filetypes=[("CSV",".csv")])
-                if inputname == "":
-                    out = messagebox.showinfo(type="okcancel",
-                                              message="Please select a file")
-
-                    # exit file entry
-                    if out == "cancel":
-                        return
-
-                else:
-                    done = True
-
-            in_file = open(inputname, encoding="UTF-8")
-            dataframe = pd.read_csv(in_file, sep=",", header=None)
-            result = self._link_cmd(dataframe)
-            done = False
-            while not done:
-                try:
-                    output_file = filedialog.asksaveasfile(title="Select an"\
-                                  "output file", initialfile="Untitled.csv",
-                                  filetypes = [("CSV", ".csv")],
-                                  defaultextension='.csv')
-                except PermissionError:
-                    raise PermissionError("Do you have the file opened?")
-
-                if output_file == None:
-                    out = messagebox.showinfo(type="okcancel",
-                                              message="Please select a file")
-                    # exit file entry
-                    if out == "cancel":
-                        return
-                else:
-                    done = True
-
-            # had to add the line_terminator = \n because for some reason,
-            # there is already a \r at the end of the row. I tried
-            # getting rid of it, but it seems to happen in the to_csv
-            # method? Unsure.
-            result.to_csv(output_file, index=False,
-                          header=["Name", "Score"],
-                          line_terminator = '\n')
-
-            messagebox.showinfo(message="Done!")
+        print("Number of threads", threading.active_count())
 
 
-
-
-    def exit_program(self):
-        """
-        Method kills the program by destroying the root, and for overkill (for
-        some reason, without quit you needed to press the button twice)
-        calls the quit function to kill the program.
-        @params - self
-        @returns - None
-        """
-        self._win.destroy()
-        self._win.quit()
-
-    def on_closing(self):
-        """
-        Method overrides Gui_Win's on_closing, which fires when xed out.
-        Calls exit_program method (kills program).
-        @params - self
-        @returns - None
-        """
-        self.exit_program()
-
-class Manual_Entry_Win(Gui_Win):
+class Manual_Entry_Frame(GUI_Frame):
     """
-    Class for the window for manually entering names. Child class of Gui_Win.
-    Window contains an entry field with a label, and two buttons:
-    back, and enter. Back returns user to the root win, and enter calls the
-    link_cmd on the input (sends input to processing).
+    Class reperesenting the frame for manual entry of names to the program.
+    Contains a constructor and a method that fires when the user presses the
+    run button.
     """
-    def __init__(self, parent, link_cmd):
+    def __init__(self, parent, main_model, test):
         """
-        Constructor for Manual Entry Windows. Calls parent's constructor,
-        then sets up the label, entry field, and the enter and back buttons.
-        @params - parent: parent window of self
-                - link_cmd: the function to call on the input
-        @returns - None
+        Constructor for the Manual_Entry_Frame. Calls the parent constructor,
+        creates the GUI elements and places them. User_in is a variable
+        representing the value of the input field.
+        @params - parent - parent object of the frame
+                - main_model - the Model object from main. Calls it's
+                  process_input method on the input and retrives output from it
+        @returns - A Manual_Entry_Frame object.
         """
-        super().__init__(link_cmd, parent)
+        super().__init__(parent, text="Manual Entry")
+        self._main_model = main_model
+        self._test = test
 
-        # lbl and buttons
         self._lbl = ttk.Label(self._frame, text="Please enter a name: ")
-        self._enter_button = ttk.Button(self._frame, text="Enter",
-                                        command=self.link)
-        self._back_button = ttk.Button(self._frame, text="Back",
-                                        command=self.return_top_lvl)
+        self._enter_button = ttk.Button(self._frame, text="Run",
+                                        command=self.input_to_main)
 
         # Variable for storing the value in the entry field. StringVar is a
         # Tkinter specific class that it uses for this.
         self._user_in = StringVar()
         self._entry_field = ttk.Entry(self._frame, textvariable=self._user_in)
 
+
         # Formatting
-        self._frame.grid(row=0, column=0)
-        self._lbl.grid(row=0, column=0, pady=10)
-        self._entry_field.grid(row=0, column=1, pady=10)
-        self._back_button.grid(row=1, column=0)
-        self._enter_button.grid(row=1, column=1)
+        self._lbl.grid(row = 0, column = 0, pady=10)
+        self._entry_field.grid(row = 0, column = 1, pady=10)
+        self._enter_button.grid(row = 1, column = 1)
 
-
-    def link(self):
+    def input_to_main(self):
         """
-        Method is called when the enter button is pressed. If the value in the
-        entry field is not blank, converts the value to a regular python string,
-        empties the entry field, and places the input into a panda's dataframe.
-        This is for standardization with the file entry input method.
-        It then calls the provided link_cmd on the dataframe, which then returns
-        a result, which is then printed along with user_input, into a messagebox
-        Eventually, the message box will be replace to provide more detailed
-        output.
-
+        Method that is called when the user presses the 'run' button. Makes
+        sure the user has entered something, and if so, converts the input
+        to a dataframe, runs link_cmd on it, and outputs the result to
+        a message box.
         @params - self
-        @returns - None?
+        @returns - None
         """
         user_input = str(self._user_in.get())
         if user_input != "":
+            self._parent.set_doing_manual(True)
             self._user_in.set("")
             in_data = pd.DataFrame([user_input])
-            result = self._link_cmd(in_data)
-            messagebox.showinfo(message=str(result.iloc[0][0]) + ": " + \
-                                str(result.iloc[0][1]) + "%\n(From 0-100, 100" \
-                                " being hard to pronounce, 0 being easy)")
+            self._parent.disable_entry()
+
+            # Set up the thread
+
+            # For testing the gui
+            if self._test:
+                self._parent.set_thread(threading.Thread(
+                                        target=self._main_model.test_gui,
+                                        args=(in_data,), daemon=True))
+            # For actually running
+            else:
+                self._parent.set_thread(threading.Thread(
+                                        target=self._main_model.process_input,
+                                        args=(in_data,), daemon=True))
+            # run the thread
+            self._parent.get_thread().start()
         else:
             messagebox.showinfo(message="Please enter something.")
 
-    def return_top_lvl(self):
+    def thread_finished(self):
         """
-        Method is called by both on_closing and the 'back' button. Destroys
-        self (and closes it's mainloop), then shows the root_win
-        @param - self
-        @returns - nothing
+        Method that is called by the parent's thread_finished method if
+        doing_manual is true. Method outputs the main model's result attribute
+        in a messagebox.
+        @params - self
+        @returns - None
         """
-        self.destroy()
-        self._parent.show()
+        self._main_model.lock.acquire()
+        messagebox.showinfo(message=str(self._main_model.result.iloc[0][0]) \
+                            + ": " + str(self._main_model.result.iloc[0][1]) + \
+                            "%\n(From 0-100, 100 being hard to pronounce" \
+                            " 0 being easy)")
 
-    def on_closing(self):
-        """
-        Method called when 'xed' out of the window. Calls return_top_lvl
-        @param - self
-        @returns - nothing
-        """
-        self.return_top_lvl()
+        self._main_model.lock.release()
 
-# Non GUI Stuff-----------------------------------------------------------------
-def take_input(func):
+
+class File_Entry_Frame(GUI_Frame):
     """
-    take_input checks if there was a filename provided on the command line.
-    If so, it calls read_file with the provided cmd line argument.
-    Otherwise, it begins manual entry of words/names.
-    Each time a word is entered, it is passed to the provided func
-    This continues until the user enters nothing.
-
-    Params: func (function) -- function that the input is passed to
-    Returns: Nothing
+    Class representing the frame for File Entry. Provides methods for
+    the user to enter input/output filenames, and to pass the data to
+    the main program.
     """
-    # Manual Input
-    if len(sys.argv) < 2:
-        while True:
-            user_in = input("Please enter a word/name "\
-                            "(Enter nothing to exit): ")
-            if user_in == "":
-                print("Goodbye!")
-                break
+
+    def __init__(self, parent, main_model, test):
+        """
+        Constructor. Calls the parent constructor, then creates and places
+        the GUI widgets. Sets up several variables to store the filenames
+        the user inputs.
+        @params - parent: the parent object of the frame
+                - main_model - the Model object from main. Calls it's
+                  process_input method on the input
+        @returns - A File_Entry_Frame object
+        """
+        super().__init__(parent, "File Entry")
+        self._main_model = main_model
+        self._test = test
+        # Needed for multithreading since we write the data to the file
+        # only after the thread finished, but we want to open before we run the
+        # thread, to see if we have any issues opening it
+        self._out_file = None
+
+        self._inputf_lbl = ttk.Label(self._frame, text="Please Enter an Input" \
+                                     " File Name: ")
+        self._outputf_lbl = ttk.Label(self._frame, text="Please Enter an " \
+                                      "Output File Name: ")
+
+        self._inputf_text = StringVar(self._frame)
+        self._inputf_field = ttk.Entry(self._frame,
+                                       textvariable=self._inputf_text)
+
+        self._outputf_text = StringVar(self._frame)
+        self._outputf_field = ttk.Entry(self._frame,
+                                        textvariable=self._outputf_text)
+
+        self._inputf_button = ttk.Button(self._frame, text="Browse",
+                                         command=self.set_infile_name)
+        self._outputf_button = ttk.Button(self._frame, text="Browse",
+                                          command=self.set_outfile_name)
+
+        self._run_button = ttk.Button(self._frame, text="Run",
+                                      command=self.input_to_main)
+
+        # Formatting
+        self._inputf_lbl.grid(row = 0, column = 0, sticky="NSW", padx = (0, 5))
+        self._inputf_field.grid(row = 0, column = 1)
+        self._inputf_button.grid(row = 0, column = 2, padx = 10, pady = 10)
+        self._outputf_lbl.grid(row = 1, column = 0, sticky="NSW", padx = (0, 5))
+        self._outputf_field.grid(row = 1, column = 1)
+        self._outputf_button.grid(row = 1, column = 2, padx = 10, pady = 10)
+        self._run_button.grid(row = 2, column = 2, padx = 10, pady = 10)
+
+
+    def get_outfile(self):
+        """
+        Method is accessor for the _out_file attribute
+        @params - self
+        @returns - self._out_file: a file object
+        """
+        return self._out_file
+
+    def set_outfile(self, value):
+        """
+        Method is a setter for the _out_file attribute
+        @params - self
+                - value: the new value for _out_file (should be a file or None)
+        @returns - None
+        """
+        self._out_file = value
+
+    def set_infile_name(self):
+        """
+        Method that runs a file dialog for the user to select an input file.
+        Sets the inputf_text attribute to the user's input.
+        @params - self
+        @returns - None
+        """
+        done = False
+        while not done:
+            input_name = filedialog.askopenfilename(title="Select an input file",
+                                                    filetypes=[("CSV",".csv")])
+            if input_name == "":
+                out = messagebox.showinfo(type="okcancel",
+                                          message="Please select a file")
+
+                # exit file entry
+                if out == "cancel":
+                    return
+
             else:
-                func(user_in)
-    # File input
-    else:
-        read_file(sys.argv[1], func)
+                done = True
 
-def read_file(filename, func):
+        self._inputf_text.set(input_name)
+
+    def set_outfile_name(self):
+        """
+        Method that runs a file dialog for the user to select an output file.
+        Sets the outputf_text attribute to the user's input.
+        @params - self
+        @returns - None
+        """
+        done = False
+        while not done:
+            output_name = filedialog.asksaveasfilename(title="Select an " \
+                          "output file", initialfile="Untitled.csv",
+                          filetypes = [("CSV", ".csv")],
+                          defaultextension='.csv')
+
+            if output_name == "":
+                out = messagebox.showinfo(type="okcancel",
+                                          message="Please select a file")
+                # exit file entry
+                if out == "cancel":
+                    return
+            else:
+                done = True
+
+        self._outputf_text.set(output_name)
+
+
+    def input_to_main(self):
+        """
+        Method that connects to the main program. Retrivies the inputf and
+        outputf texts to check if they are empty. If so, it exits, prompting
+        the user to enter both a input and output file name. It additionally
+        checks if the input file exists. If the file exists, the method
+        reads the data and sends it to the main program by creating a new
+        thread and running that thread.
+
+        While the main programming is running, we disable both this frame and
+        the manual_entry frame with a call to the parent, so that we do not
+        create more than one thread.
+        @params - self
+        @returns - None
+        """
+        input_name = self._inputf_text.get()
+        output_name = self._outputf_text.get()
+
+        if input_name == "" or output_name == "":
+            messagebox.showinfo(message="Please select an input and an " \
+                                        "output file.")
+            return
+
+
+        if not path.exists(input_name):
+            messagebox.showinfo(message="The given input file does not exist.")
+            return
+
+        try:
+            in_file = open(input_name, encoding="UTF-8")
+        except PermissionError:
+            messagebox.showinfo(message="Error: Input File Permisson Denied. " \
+                                        "Do you have the file open?")
+            return
+
+        try:
+            self._out_file = open(output_name, mode="w", encoding="UTF-8")
+        except PermissionError:
+            messagebox.showinfo(message="Error: Output File Permisson Denied." \
+                                        " Do you have the file open?")
+            return
+
+        self._inputf_text.set("")
+        self._outputf_text.set("")
+        in_data = pd.read_csv(in_file, sep=",", header=None)
+        in_file.close()
+
+        # Setting GUI to a two thread state
+        self._parent.set_doing_file(True)
+        self._parent.disable_entry()
+
+        # Setting up the thread
+
+        # For testing the gui
+        if self._test:
+            self._parent.set_thread(threading.Thread(
+                                    target=self._main_model.test_gui,
+                                    args=(in_data,), daemon=True))
+        # For actually running
+        else:
+            self._parent.set_thread(threading.Thread(
+                                    target=self._main_model.process_input,
+                                    args=(in_data,), daemon=True))
+
+        # Run the thread
+        self._parent.get_thread().start()
+
+    def thread_finished(self):
+        """
+        Method that is called by parent's thread_finished method if
+        doing_file is true. Writes the MainModel's result attribute
+        (a pd dataframe) to self._out_file, then closes out_file
+        @params - self
+        @return - None
+        """
+        self._main_model.lock.acquire()
+
+        self._main_model.result.to_csv(self._out_file, index=False,
+                                       header=["Name", "Score"],
+                                       line_terminator = '\n')
+        self._out_file.close()
+        self._out_file = None
+        self._main_model.lock.release()
+
+        messagebox.showinfo(message="Done!")
+
+
+class Progress_Frame(GUI_Frame):
     """
-    Function reads filename as a csv into a pandas dataframe, then calls the
-    provided func function with the dataframe as a parameter
-
-    Params: filename (str) -- filename/path to read in as csv
-            func (function) -- function that is called on the dataframe produced
-    Returns: Nothing
-
+    Class for progress frame
     """
-    # encoding ="UTF-8" needed for IPA chars
-    in_file = open(filename, encoding="UTF-8")
-    dataframe = pd.read_csv(in_file, sep=",", names=["Word", "IPA"])
-    func(dataframe)
+    # To Do --------------------------------------------------------------------
+    def __init__(self, parent):
+        super().__init__(parent, "Progress & Messages")
 
-def write_dataframe(filename, dataframe):
+class Root_Win:
     """
-    Function is a simple wrapper for pandas' DataFrame.to_csv function.
-    Will probably be useful enventually when more advanced ui is made
-
-    Params: filename (str) -- filename/path to write dataframe into
-            dataframe (pd.DataFrame) -- data to write to file
-    Returns: Nothing
+    Class representing the window the GUI, contains all frames, parent
+    object of all the frames. Provides methods for manipulating the frames
+    as a whole frame. Object that is created by main file for creating the GUI
     """
-    dataframe.to_csv(filename, header=["Word","Pronuncation Rating"])
+    def __init__(self, main_model, test=False):
+        """
+        Constructor for the Root_Win object. Sets up each frame and event
+        binding.
+        @params - main_model - the Model object from main. Calls it's
+                  process_input method on the input
+        @return - A Root_Win object
+        """
+        self._main_model = main_model
+        self._test = test
+        self._thread = None
 
-#------------------------------------------------------------------------------
+        self._win = Tk()
+        self._win.title("Name Pronuncation Program")
+        self._win.wm_title("Name Pronuncation Program")
 
-def print_ret(x):
-    print(x)
-    column2 = pd.DataFrame([2] * len(x.index))
-    return pd.concat([x, column2], axis=1, ignore_index=True)
+        # Binds protocol for when the window is 'x'ed out.
+        self._win.protocol("WM_DELETE_WINDOW", self.exit_program)
+        # Overrides the thread exception handling
+        threading.excepthook = self.catch_thread_exception
+
+        # Virtual Event bindings.
+        # IF YOU WANT A VIRTUAL EVENT TO RUN A METHOD WHEN FIRED,
+        # IT MUST BE BOUND TO THAT METHOD HERE
+        self._win.bind("<<ThreadEnded>>", self.thread_finished)
+
+
+        self._intro_frame = Intro_Frame(self)
+        self._manual_frame = Manual_Entry_Frame(self, self._main_model, test)
+        self._file_frame = File_Entry_Frame(self, self._main_model, test)
+        self._progress_frame = Progress_Frame(self)
+
+        self._doing_manual = False
+        self._doing_file = False
+
+        self._intro_frame._frame.grid(row = 0, column = 0, padx = 10, pady = 10,
+                                      sticky="NSEW")
+        self._manual_frame._frame.grid(row = 0, column = 1,
+                                       padx = 10, pady = 10, sticky="NSEW")
+        self._file_frame._frame.grid(row = 1, column = 0,
+                                       padx = 10, pady = 10, sticky="NSEW")
+        self._progress_frame._frame.grid(row = 1, column = 1,
+                                         padx = 10, pady = 10, sticky = "NSEW")
+
+        self._win.columnconfigure(0, weight=2)
+        self._win.columnconfigure(1, weight=2)
+        self._win.rowconfigure(0, weight=2)
+        self._win.rowconfigure(1, weight=2)
+
+
+    def exit_program(self):
+        """
+        Method that is called when the 'WM_DELETE_WINDOW', or 'xing out',
+        window event is fired. Default is to destroy the window, kills the
+        GUI.
+        @params - self
+        @returns - None
+        """
+        box_msg = "Are you sure you want to quit?"
+        if threading.active_count() > 1:
+            box_msg += " Warning! The main program is currently running. " \
+                       "If you exit, it will stop running."
+        out = messagebox.showinfo(type="yesno",
+                                   message=box_msg)
+        # cancel exit
+        if out == "no":
+            return
+        self._win.destroy()
+        self._win.quit()
+
+    def get_win(self):
+        """
+        Accessor the the _win attribute.
+        @params - self
+        @return - self._win (a tk Window)
+        """
+        return self._win
+
+    def mainloop(self):
+        """
+        Wrapper for tkinter's mainloop method
+        @params - self
+        @returns - None
+        """
+        self._win.mainloop()
+
+    def disable_entry(self):
+        """
+        Method disables the manual entry and file entry frames with a call
+        to their disable method.
+        @params - self
+        @returns - None
+        """
+        self._manual_frame.disable()
+        self._file_frame.disable()
+
+    def enable_entry(self):
+        """
+        Method enables the manual entry and file entry frames with a call
+        to their enable method.
+        @params - self
+        @returns - None
+        """
+        self._manual_frame.enable()
+        self._file_frame.enable()
+
+    def generate_event(self, event):
+        """
+        Method is a wrapper for Tkinter's event_generate method.
+        I call it generate_event because I like that better than
+        event_generate
+        @params - self
+                - event: a string denoting the event to be fired.
+                         virtual (abitartily defined) events are denoted
+                         with << and >> Ex: <<Event_Here>>.
+                         To actually have something happen when a virtual event
+                         fires, the event must be bound to a method in
+                         the object's constructor.
+        @returns - None
+        """
+        self._win.event_generate(event)
+
+    def thread_finished(self, _):
+        """
+        Method that is ran when the virtual event for the non-gui
+        thread finishing normally is fired. Tests to see which type of entry
+        occured calls that type of output, then resets the GUI to a single
+        threaded state (enable frames, set status attributes to False)
+        @params - self
+                - _ - This parameter is a string that denotes the virtual
+                      event which called this function. Currently unused.
+        @returns - None
+        """
+        if self._doing_manual:
+            self._manual_frame.thread_finished()
+            self._doing_manual = False
+        elif self._doing_file:
+            self._file_frame.thread_finished()
+            self._doing_file = False
+
+        self.enable_entry()
+
+    def set_thread(self, value):
+        """
+        Method for setting the object's thread attribute
+        @params - self
+                - value: the python thread object to be assigned to self._thread
+        @returns - None
+        """
+        self._thread = value
+
+    def get_thread(self):
+        """
+        Method for accessing the object's thread attribute.
+        @params - self
+        @returns - self._thread - a python thread object
+        """
+        return self._thread
+
+    def set_doing_file(self, value):
+        """
+        Method for setting the object's doing_file status attribute
+        @params - self
+                - value: a boolean value
+        @returns - None
+        """
+        self._doing_file = value
+
+    def set_doing_manual(self, value):
+        """
+        Method for setting the object's doing_manual status attribute
+        @params - self
+                - value: a boolean value
+        @returns - None
+        """
+        self._doing_manual = value
+
+    def catch_thread_exception(self, args):
+        """
+        Method that is called when an exception occurs in the non-gui thread.
+        Overrides the provided threading.excepthook so that we can reset the
+        GUI to a single-thread state.
+        @params - self
+                - args: a tuple containing:
+                        exc_type: an exception type
+                        exc_value: The value passed with the exception
+                        exc_traceback: A traceback object for the exception
+                        thread: Which thread the exception occured in
+        @returns - None
+        """
+        exc_type, exc_value, exc_traceback, thread = args
+
+        print("An exception occured in the non-gui thread:", file=sys.stderr)
+        traceback.print_exception(exc_type, exc_value, exc_traceback)
+
+        self._doing_file = False
+        self._doing_manual = False
+        out_file = self._file_frame.get_outfile()
+        if out_file:
+            out_file.close()
+            self._file_frame.set_outfile(None)
+
+
+        self.enable_entry()
+
 
 def main():
     """
-    Main just sets up the root window and calls it's mainloop
+    Main just sets up the root window and calls it's mainloop.
     """
 
     root = Root_Win(print_ret)
