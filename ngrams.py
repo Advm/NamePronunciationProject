@@ -44,6 +44,18 @@ class ngrams:
         if average_gram_probability != 0:
             average_gram_probability = average_gram_probability / len(grams)
         return average_gram_probability
+    
+    def generate_other_probability(self, word):
+        """Given a word, scale data with 100 == most occurences"""
+        grams = self.generate_ngrams(word)
+        max_occurences = max(self.dictionary.values()) / 100
+        average_gram_probability = 0
+        for gram in grams:
+            average_gram_probability += self.dictionary.get(gram) / max_occurences
+        
+        if average_gram_probability != 0:
+            average_gram_probability = average_gram_probability / len(grams)
+        return average_gram_probability
 
 # data = ["hello", "world", "Ihope", "thisworks"]
 # bi_gram = ngrams(data, 2)
