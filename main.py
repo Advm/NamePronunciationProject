@@ -23,8 +23,8 @@ class MainModel:
         self.ipa_model = to_ipa()
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish')
-        self.twograms = ngrams(self.corpus, 2)
-        self.threegrams = ngrams(self.corpus, 3)
+        self.twograms = ngrams(self.corpus, 2, "unigram_freq.csv")
+        self.threegrams = ngrams(self.corpus, 3, "unigram_freq.csv")
 
         # Needed to communicate/share data across threads
         self._gui = None
@@ -105,7 +105,7 @@ def main():
 
 with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
     corpus = [w[1:-1] for row in csv.reader(f) for w in row[1].split(', ')] 
-    ngram = ngrams(corpus, 1)
+    ngram = ngrams(corpus, 1, "unigram_freq.csv")
     ipa_model = to_ipa()
     word = "kenny"
     print(f"{word}: ", ngram.generate_other_probability(ipa_model.to_ipa(word)[1:-1]))
