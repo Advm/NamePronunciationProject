@@ -49,8 +49,10 @@ class ngrams:
         """Given a word, scale data with 100 == most occurences"""
         grams = self.generate_ngrams(word)
         max_occurences = max(self.dictionary.values()) / 100
+        print(max(self.dictionary.values()))
         average_gram_probability = 0
         for gram in grams:
+            print(f"{gram}: {self.dictionary[gram]}")
             average_gram_probability += self.dictionary.get(gram) / max_occurences
         
         if average_gram_probability != 0:

@@ -52,10 +52,16 @@ def main(words):
     root.mainloop()
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 
-
+with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
+    corpus = [w[1:-1] for row in csv.reader(f) for w in row[1].split(', ')] 
+    ngram = ngrams(corpus, 1)
+    ipa_model = to_ipa()
+    word = "kenny"
+    print(f"{word}: ", ngram.generate_other_probability(ipa_model.to_ipa(word)[1:-1]))
+    print(ipa_model.to_ipa(word))
 
 
 # def testoutput():
