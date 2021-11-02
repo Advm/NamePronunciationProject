@@ -1,6 +1,8 @@
 from g2p_en import G2p
 from syllabifier import syllabifyARPA
 import sys
+import csv
+import os
 
 class to_ipa:
     def __init__(self):
@@ -70,3 +72,16 @@ class to_ipa:
             if c.isdigit():
                 return self.stress[int(c)]
         return ''
+
+
+
+# def add_ipa_to_csv(csv_name):
+#     """ This is a function to be called once, to add IPA translations to a CSV file."""
+#     ipamodel = to_ipa()    
+#     with open(csv_name, encoding="utf8") as f, open(f"temp_{csv_name}", 'w') as out:
+#         reader = csv.reader(f)
+#         writer = csv.writer(out)
+#         for row in reader:
+#             writer.writerow([row[0], ipamodel.to_ipa(row[0])[1:-1], row[1]])
+#     os.remove(csv_name)
+#     os.rename(f"temp_{csv_name}", csv_name)
