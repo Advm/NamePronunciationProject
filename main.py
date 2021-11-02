@@ -24,8 +24,8 @@ class MainModel:
         self.ipa_model = to_ipa()
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish')
-        self.twograms = ngrams(self.corpus, 2)
-        self.threegrams = ngrams(self.corpus, 3)
+        self.twograms = ngrams(self.corpus, 2, "unigram_freq.csv")
+        self.threegrams = ngrams(self.corpus, 3, "unigram_freq.csv")
 
         # Needed to communicate/share data across threads
         self._gui = None
