@@ -21,7 +21,7 @@ class MainModel:
             self.corpus = [w[1:-1] for row in csv.reader(f) \
                            for w in row[1].split(', ')]
 
-        self.ipa_model = to_ipa()
+        self.ipa_model = to_ipa(self)
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish')
         self.twograms = ngrams(self.corpus, 2, "unigram_freq.csv")
@@ -29,6 +29,9 @@ class MainModel:
 
         # Needed to communicate/share data across threads
         self._gui = None
+        self.prog_val = None
+        self.to_gui_message = ""
+        self.is_warning = False
         self.result = None
         self.lock = threading.Lock()
 
@@ -37,18 +40,22 @@ class MainModel:
 
         # <names> is a list of every name the user inputted
         names = list(words[0])
+        self.add_progress(10)
 
         # <ipa_names> is a list of the same length containing IPA transcriptions of each name
         #   i.e., ipa_names[i] is an IPA transcription of names[i]
         ipa_names = [self.ipa_model.to_ipa(name)[1:-1] for name in names]
+        self.add_progress(30)
 
         # Get n-grams scores
         ngrams_scores = [self.twograms.generate_probability(name) for name in ipa_names]
+        self.add_progress(30)
 
         # get neural net scores
         phonemeNN = convertToModelFormat(self.SAE_model,
                                          pd.read_csv('Allchars.csv'))
         nn_scores = phonemeNN.convert(ipa_names)
+        self.add_progress(30)
 
         final_scores = [round(((nn_scores[i] + ngrams_scores[i]) / 2) * 100, 2)\
                         for i in range(len(ngrams_scores))]
@@ -62,13 +69,47 @@ class MainModel:
                                    pd.DataFrame(final_scores)],
                                    axis=1, ignore_index=True)
         self.lock.release()
+        self.add_progress(10)
         self._gui.generate_event("<<ThreadEnded>>")
 
     def set_gui(self, gui_win):
         """
         Method used to set the object's gui attribute.
+        @params - self
+                - gui_win: the Root_Win object to set _gui to
+        @returns - None
         """
         self._gui = gui_win
+
+    def add_progress(self, value):
+        """
+        Method used to add progress to the progress bar. Sets prog_val to value
+        and then fires the virtual event to add progress
+        @params - self
+                - value: the value to add to the progress bar
+        @returns - None
+        """
+        self.lock.acquire()
+        self.prog_val = value
+        self.lock.release()
+        self._gui.generate_event("<<AddProgress>>")
+
+    def send_to_message_log(self, output, warning=True):
+        """
+        Method used to output a message to the message log. Sets is_warning to
+        warning, to_gui_message to output, and fires the
+        <<SendMessage>> virtual event
+        @params - self
+                - output: The message to be outputted to the log
+                - warning: If true, the message is treated as a warning.
+                           Otherwise, it is treated as an 'info' message.
+        @returns - None
+        """
+        self.lock.acquire()
+        self.is_warning = warning
+        self.to_gui_message = output
+        self.lock.release()
+        self._gui.generate_event("<<SendMessage>>")
 
 
     def test_gui(self, words):
@@ -81,8 +122,9 @@ class MainModel:
         self.lock.acquire()
         self.result = pd.concat([words, column2], axis=1, ignore_index=True)
         self.lock.release()
+        self.add_progress(100)
+        #self.send_to_message_log("Hi", False)
         self._gui.generate_event("<<ThreadEnded>>")
-
 
 def main():
     """
@@ -95,7 +137,6 @@ def main():
     model = MainModel()
     root = Root_Win(model)
     model.set_gui(root)
-
     root.mainloop()
 
 
@@ -103,7 +144,7 @@ if __name__ == '__main__':
     main()
 
 # with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
-#     corpus = [w[1:-1] for row in csv.reader(f) for w in row[1].split(', ')] 
+#     corpus = [w[1:-1] for row in csv.reader(f) for w in row[1].split(', ')]
 #     ngram = ngrams(corpus, 1)
 #     ipa_model = to_ipa()
 #     word = "kenny"

@@ -5,9 +5,361 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-import threading, traceback, time
+import threading, traceback, time, logging, logging.config
 # Makes sure we are running a threaed tkinter build
 Tcl().eval('set tcl_platform(threaded)')
+
+
+
+
+class Root_Win:
+    """
+    Class representing the window the GUI, contains all frames, parent
+    object of all the frames. Provides methods for manipulating the frames
+    as a whole frame. Object that is created by main file for creating the GUI
+    """
+
+    # Integer codes for logging levels
+    info = 20
+    warn = 30
+    error = 40
+
+    # Format for logs
+    formatter = logging.Formatter('%(asctime)s | %(levelname)s\n%(message)s',
+                                  datefmt='%Y-%m-%d, %H:%M:%S')
+
+    def __init__(self, main_model, test=False):
+        """
+        Constructor for the Root_Win object. Sets up each frame and event
+        binding.
+        @params - main_model - the Model object from main. Calls it's
+                  process_input method on the input
+        @return - A Root_Win object
+        """
+        self._main_model = main_model
+        self._test = test
+        self._thread = None
+
+        self._win = Tk()
+        self._win.title("Name Pronuncation Program")
+        self._win.wm_title("Name Pronuncation Program")
+
+        # Binds protocol for when the window is 'x'ed out.
+        self._win.protocol("WM_DELETE_WINDOW", self.exit_program)
+        # Overrides the thread exception handling
+        threading.excepthook = self.catch_thread_exception
+        # Overrides gui thread exception handling
+        sys.excepthook = self.catch_exception
+
+        # log files
+        message_handler = logging.FileHandler('message.log')
+        error_handler = logging.FileHandler('error.log')
+        message_handler.setFormatter(Root_Win.formatter)
+        error_handler.setFormatter(Root_Win.formatter)
+
+        self._message_log = logging.getLogger("Message Log")
+        self._error_log =  logging.getLogger("Error Log")
+
+        self._message_log.setLevel(Root_Win.info)
+        self._error_log.setLevel(Root_Win.error)
+
+        self._message_log.addHandler(message_handler)
+        self._error_log.addHandler(error_handler)
+
+
+
+        # Virtual Event bindings.
+        # IF YOU WANT A VIRTUAL EVENT TO RUN A METHOD WHEN FIRED,
+        # IT MUST BE BOUND TO THAT METHOD HERE
+        self._win.bind("<<ThreadEnded>>", self.thread_finished)
+        self._win.bind("<<AddProgress>>", self.add_progress)
+        self._win.bind("<<SendMessage>>", self.to_gui_message_log)
+
+
+        self._intro_frame = Intro_Frame(self)
+        self._manual_frame = Manual_Entry_Frame(self, self._main_model, test)
+        self._file_frame = File_Entry_Frame(self, self._main_model, test)
+        self._progress_frame = Progress_Frame(self)
+
+        self._doing_manual = False
+        self._doing_file = False
+
+        self._intro_frame._frame.grid(row = 0, column = 0, padx = 10, pady = 10,
+                                      sticky="NSEW")
+        self._manual_frame._frame.grid(row = 0, column = 1,
+                                       padx = 10, pady = 10, sticky="NSEW")
+        self._file_frame._frame.grid(row = 1, column = 0,
+                                       padx = 10, pady = 10, sticky="NSEW")
+        self._progress_frame._frame.grid(row = 1, column = 1,
+                                         padx = 10, pady = 10, sticky = "NSEW")
+
+        self._win.columnconfigure(0, weight=2)
+        self._win.columnconfigure(1, weight=2)
+        self._win.rowconfigure(0, weight=2)
+        self._win.rowconfigure(1, weight=2)
+
+
+    def exit_program(self):
+        """
+        Method that is called when the 'WM_DELETE_WINDOW', or 'xing out',
+        window event is fired. Default is to destroy the window, kills the
+        GUI.
+        @params - self
+        @returns - None
+        """
+        box_msg = "Are you sure you want to quit?"
+        if threading.active_count() > 1:
+            box_msg += " Warning! The main program is currently running. " \
+                       "If you exit, it will stop running."
+        out = messagebox.showinfo(type="yesno",
+                                   message=box_msg)
+        # cancel exit
+        if out == "no":
+            return
+        self._win.destroy()
+        self._win.quit()
+
+    def get_win(self):
+        """
+        Accessor the the _win attribute.
+        @params - self
+        @return - self._win (a tk Window)
+        """
+        return self._win
+
+    def mainloop(self):
+        """
+        Wrapper for tkinter's mainloop method
+        @params - self
+        @returns - None
+        """
+        self._win.mainloop()
+
+    def disable_entry(self):
+        """
+        Method disables the manual entry and file entry frames with a call
+        to their disable method.
+        @params - self
+        @returns - None
+        """
+        self._manual_frame.disable()
+        self._file_frame.disable()
+
+    def enable_entry(self):
+        """
+        Method enables the manual entry and file entry frames with a call
+        to their enable method.
+        @params - self
+        @returns - None
+        """
+        self._manual_frame.enable()
+        self._file_frame.enable()
+
+    def generate_event(self, event):
+        """
+        Method is a wrapper for Tkinter's event_generate method.
+        I call it generate_event because I like that better than
+        event_generate
+        @params - self
+                - event: a string denoting the event to be fired.
+                         virtual (abitartily defined) events are denoted
+                         with << and >> Ex: <<Event_Here>>.
+                         To actually have something happen when a virtual event
+                         fires, the event must be bound to a method in
+                         the object's constructor.
+        @returns - None
+        """
+        self._win.event_generate(event)
+
+    def thread_finished(self, _):
+        """
+        Method that is ran when the virtual event for the non-gui
+        thread finishing normally is fired. Tests to see which type of entry
+        occured calls that type of output, then resets the GUI to a single
+        threaded state (enable frames, set status attributes to False)
+        @params - self
+                - _ - This parameter is a string that denotes the virtual
+                      event which called this function. Currently unused.
+        @returns - None
+        """
+        if self._doing_manual:
+            self._manual_frame.thread_finished()
+            self._doing_manual = False
+        elif self._doing_file:
+            self._file_frame.thread_finished()
+            self._doing_file = False
+
+        self.enable_entry()
+        self.reset_progress()
+
+    def hide_prog_lbl(self):
+        """
+        Wrapper for progress frame's hide_label
+        @params - self
+        @returns - None
+        """
+        self._progress_frame.hide_label()
+
+    def set_thread(self, value):
+        """
+        Method for setting the object's thread attribute
+        @params - self
+                - value: the python thread object to be assigned to self._thread
+        @returns - None
+        """
+        self._thread = value
+
+    def get_thread(self):
+        """
+        Method for accessing the object's thread attribute.
+        @params - self
+        @returns - self._thread - a python thread object
+        """
+        return self._thread
+
+    def set_doing_file(self, value):
+        """
+        Method for setting the object's doing_file status attribute
+        @params - self
+                - value: a boolean value
+        @returns - None
+        """
+        self._doing_file = value
+
+    def set_doing_manual(self, value):
+        """
+        Method for setting the object's doing_manual status attribute
+        @params - self
+                - value: a boolean value
+        @returns - None
+        """
+        self._doing_manual = value
+
+    def add_progress(self, _):
+        """
+        Method for adding progress to the progress frame's progressbar.
+        Ran when the <<AddProgress>> virtual event is fired.
+        @params - self
+                - _: This unused parameter denotes the name of the event
+                     this method was fired by.
+        @returns - None
+        """
+        self._main_model.lock.acquire()
+        self._progress_frame.add_progress(self._main_model.prog_val)
+        self._main_model.lock.release()
+
+    def reset_progress(self):
+        """
+        Method for resetting the progress frame's progressbar
+        @params - self
+        @returns - None
+        """
+        self._progress_frame.reset_progress()
+
+    def to_gui_message_log(self, _):
+        """
+        Method for sending a message (info or warning) to the message log
+        Runs when the <<SendMessage>> virtual event is fired.
+        @params - self
+                - _: This unused parameter denotes the name of the event
+                     this method was fired by.
+        @returns - None
+        """
+        self._main_model.lock.acquire()
+        # The message itself
+        message = self._main_model.to_gui_message
+        # Whether we want to output a warning or a message
+        if self._main_model.is_warning:
+            level = Root_Win.warn
+            self._progress_frame.show_label()
+        else:
+            level = Root_Win.info
+        self._main_model.lock.release()
+
+        self.to_message_log(message, level)
+
+    def to_message_log(self, output, level):
+        """
+        Wrapper Method for _message_log's .log method for logging a message.
+        @params - self
+                - output: the message to be output
+                - level: An integer denoting the level of the message
+                  (info is 20, warning 30, error 40)
+        @returns - None
+        """
+        self._message_log.log(level, output)
+
+    def to_error_log(self, output):
+        """
+        Wrapper Method for _error_log's .error method for logging an error.
+        @params - self
+                - output: the message to be output
+
+        @returns - None
+        """
+        self._error_log.error(output)
+
+
+    def catch_exception(self, exc_type, exc_value, exc_traceback):
+        """
+        Method that is called when an exception occurs in the gui thread.
+        Overrides the provided sys.excepthook so that we can write the error a
+        log, then exit the program with a return value of 1, indicating error.
+        @params - self
+                - exc_type: an exception type
+                - exc_value: The value passed with the exception
+                - exc_traceback: A traceback object for the exception
+        @returns - None
+        """
+        self.to_error_log("".join(traceback.format_exception(exc_type,
+                                  exc_value, exc_traceback)))
+        exc_name = str(exc_type)
+        exc_name = exc_name[exc_name.find('\'') + 1:].strip("'>")
+        if exc_name.find("Error") == -1:
+            exc_name += " error"
+        messagebox.showinfo(message=f"An uncaught {exc_name} " \
+                                     "occurred in the GUI. Check error.log " \
+                                     "for more details.")
+
+        sys.exit(1)
+
+
+
+    def catch_thread_exception(self, args):
+        """
+        Method that is called when an exception occurs in the non-gui thread.
+        Overrides the provided threading.excepthook so that we can reset the
+        GUI to a single-thread state.
+        @params - self
+                - args: a tuple containing:
+                        exc_type: an exception type
+                        exc_value: The value passed with the exception
+                        exc_traceback: A traceback object for the exception
+                        thread: Which thread the exception occured in
+        @returns - None
+        """
+        exc_type, exc_value, exc_traceback, thread = args
+        self.to_error_log("".join(traceback.format_exception(exc_type,
+                                  exc_value, exc_traceback)))
+
+        exc_name = str(exc_type)
+        exc_name = exc_name[exc_name.find('\'') + 1:].strip("'>")
+        if exc_name.find("Error") == -1:
+            exc_name += " error"
+
+        messagebox.showinfo(message=f"An uncaught error of type: {exc_type}, " \
+                                     "occurred in the non-gui thread. Check " \
+                                     "error.log for more details.")
+
+        self._doing_file = False
+        self._doing_manual = False
+        out_file = self._file_frame.get_outfile()
+        if out_file:
+            out_file.close()
+            self._file_frame.set_outfile(None)
+
+        self.reset_progress()
+        self.enable_entry()
 
 class GUI_Frame:
     """
@@ -66,7 +418,7 @@ class Intro_Frame(GUI_Frame):
         self._thrd_button = ttk.Button(self._frame, text="threads",
                                        command=self.count_threads)
         self._label.grid(row = 0, column = 0)
-        self._thrd_button.grid(row = 1, column = 0)
+        #self._thrd_button.grid(row = 1, column = 0)
         # To add options........
 
     def count_threads(self):
@@ -126,6 +478,7 @@ class Manual_Entry_Frame(GUI_Frame):
             self._user_in.set("")
             in_data = pd.DataFrame([user_input])
             self._parent.disable_entry()
+            self._parent.hide_prog_lbl()
 
             # Set up the thread
 
@@ -142,7 +495,9 @@ class Manual_Entry_Frame(GUI_Frame):
             # run the thread
             self._parent.get_thread().start()
         else:
-            messagebox.showinfo(message="Please enter something.")
+            messagebox.showinfo(message="Please enter something")
+
+
 
     def thread_finished(self):
         """
@@ -334,6 +689,7 @@ class File_Entry_Frame(GUI_Frame):
         # Setting GUI to a two thread state
         self._parent.set_doing_file(True)
         self._parent.disable_entry()
+        self._parent.hide_prog_lbl()
 
         # Setting up the thread
 
@@ -367,228 +723,70 @@ class File_Entry_Frame(GUI_Frame):
         self._out_file.close()
         self._out_file = None
         self._main_model.lock.release()
-
+        self._parent.reset_progress()
         messagebox.showinfo(message="Done!")
 
 
 class Progress_Frame(GUI_Frame):
     """
-    Class for progress frame
+    Class representing the bottom-right frame, or the frame containing
+    the progress bar and in-gui message log (at some point).
     """
-    # To Do --------------------------------------------------------------------
+    # To Do: Add text widget for displaying messages/warnings
     def __init__(self, parent):
+        """
+        Constructor for the Progress_Frame class. Creates the progress bar and
+        its varaible that stores the progress value, as well as a label
+        that appears when a warning is sent to the message log (latter will
+        be replaced at some point)
+        """
         super().__init__(parent, "Progress & Messages")
 
-class Root_Win:
-    """
-    Class representing the window the GUI, contains all frames, parent
-    object of all the frames. Provides methods for manipulating the frames
-    as a whole frame. Object that is created by main file for creating the GUI
-    """
-    def __init__(self, main_model, test=False):
+        self._progress_value = IntVar()
+        self._progress_bar = ttk.Progressbar(self._frame, length=250, mode=
+                                             "determinate", variable=self._progress_value)
+        self._log_msg_lbl = ttk.Label(self._frame,
+                                  text = "A warning has been sent to the message log")
+        self._progress_bar.grid(row = 0, column = 0, sticky="NSEW", padx=5, pady=5)
+
+        self._log_msg_lbl.grid(row = 0, column = 1, padx=5, pady=5)
+        self._log_msg_lbl.grid_forget()
+
+
+    def add_progress(self, value):
         """
-        Constructor for the Root_Win object. Sets up each frame and event
-        binding.
-        @params - main_model - the Model object from main. Calls it's
-                  process_input method on the input
-        @return - A Root_Win object
+        Method that adds an amount of progress equal to value param to the
+        object's _progress_value attribute, which _progress_bar uses to update.
+        @params - self
+                - value: The value to add to the progress bar
+        @returns - None
         """
-        self._main_model = main_model
-        self._test = test
-        self._thread = None
+        self._progress_value.set(self._progress_value.get() + value)
 
-        self._win = Tk()
-        self._win.title("Name Pronuncation Program")
-        self._win.wm_title("Name Pronuncation Program")
-
-        # Binds protocol for when the window is 'x'ed out.
-        self._win.protocol("WM_DELETE_WINDOW", self.exit_program)
-        # Overrides the thread exception handling
-        threading.excepthook = self.catch_thread_exception
-
-        # Virtual Event bindings.
-        # IF YOU WANT A VIRTUAL EVENT TO RUN A METHOD WHEN FIRED,
-        # IT MUST BE BOUND TO THAT METHOD HERE
-        self._win.bind("<<ThreadEnded>>", self.thread_finished)
-
-
-        self._intro_frame = Intro_Frame(self)
-        self._manual_frame = Manual_Entry_Frame(self, self._main_model, test)
-        self._file_frame = File_Entry_Frame(self, self._main_model, test)
-        self._progress_frame = Progress_Frame(self)
-
-        self._doing_manual = False
-        self._doing_file = False
-
-        self._intro_frame._frame.grid(row = 0, column = 0, padx = 10, pady = 10,
-                                      sticky="NSEW")
-        self._manual_frame._frame.grid(row = 0, column = 1,
-                                       padx = 10, pady = 10, sticky="NSEW")
-        self._file_frame._frame.grid(row = 1, column = 0,
-                                       padx = 10, pady = 10, sticky="NSEW")
-        self._progress_frame._frame.grid(row = 1, column = 1,
-                                         padx = 10, pady = 10, sticky = "NSEW")
-
-        self._win.columnconfigure(0, weight=2)
-        self._win.columnconfigure(1, weight=2)
-        self._win.rowconfigure(0, weight=2)
-        self._win.rowconfigure(1, weight=2)
-
-
-    def exit_program(self):
+    def reset_progress(self):
         """
-        Method that is called when the 'WM_DELETE_WINDOW', or 'xing out',
-        window event is fired. Default is to destroy the window, kills the
-        GUI.
+        Method that resets the object's _progress_value attribute to zero,
+        which _progress_bar uses to update to an empty state.
         @params - self
         @returns - None
         """
-        box_msg = "Are you sure you want to quit?"
-        if threading.active_count() > 1:
-            box_msg += " Warning! The main program is currently running. " \
-                       "If you exit, it will stop running."
-        out = messagebox.showinfo(type="yesno",
-                                   message=box_msg)
-        # cancel exit
-        if out == "no":
-            return
-        self._win.destroy()
-        self._win.quit()
+        self._progress_value.set(0)
 
-    def get_win(self):
+    def show_label(self):
         """
-        Accessor the the _win attribute.
-        @params - self
-        @return - self._win (a tk Window)
-        """
-        return self._win
-
-    def mainloop(self):
-        """
-        Wrapper for tkinter's mainloop method
+        Method for showing the log message label
         @params - self
         @returns - None
         """
-        self._win.mainloop()
+        self._log_msg_lbl.grid()
 
-    def disable_entry(self):
+    def hide_label(self):
         """
-        Method disables the manual entry and file entry frames with a call
-        to their disable method.
+        Method for hiding the log message label
         @params - self
         @returns - None
         """
-        self._manual_frame.disable()
-        self._file_frame.disable()
-
-    def enable_entry(self):
-        """
-        Method enables the manual entry and file entry frames with a call
-        to their enable method.
-        @params - self
-        @returns - None
-        """
-        self._manual_frame.enable()
-        self._file_frame.enable()
-
-    def generate_event(self, event):
-        """
-        Method is a wrapper for Tkinter's event_generate method.
-        I call it generate_event because I like that better than
-        event_generate
-        @params - self
-                - event: a string denoting the event to be fired.
-                         virtual (abitartily defined) events are denoted
-                         with << and >> Ex: <<Event_Here>>.
-                         To actually have something happen when a virtual event
-                         fires, the event must be bound to a method in
-                         the object's constructor.
-        @returns - None
-        """
-        self._win.event_generate(event)
-
-    def thread_finished(self, _):
-        """
-        Method that is ran when the virtual event for the non-gui
-        thread finishing normally is fired. Tests to see which type of entry
-        occured calls that type of output, then resets the GUI to a single
-        threaded state (enable frames, set status attributes to False)
-        @params - self
-                - _ - This parameter is a string that denotes the virtual
-                      event which called this function. Currently unused.
-        @returns - None
-        """
-        if self._doing_manual:
-            self._manual_frame.thread_finished()
-            self._doing_manual = False
-        elif self._doing_file:
-            self._file_frame.thread_finished()
-            self._doing_file = False
-
-        self.enable_entry()
-
-    def set_thread(self, value):
-        """
-        Method for setting the object's thread attribute
-        @params - self
-                - value: the python thread object to be assigned to self._thread
-        @returns - None
-        """
-        self._thread = value
-
-    def get_thread(self):
-        """
-        Method for accessing the object's thread attribute.
-        @params - self
-        @returns - self._thread - a python thread object
-        """
-        return self._thread
-
-    def set_doing_file(self, value):
-        """
-        Method for setting the object's doing_file status attribute
-        @params - self
-                - value: a boolean value
-        @returns - None
-        """
-        self._doing_file = value
-
-    def set_doing_manual(self, value):
-        """
-        Method for setting the object's doing_manual status attribute
-        @params - self
-                - value: a boolean value
-        @returns - None
-        """
-        self._doing_manual = value
-
-    def catch_thread_exception(self, args):
-        """
-        Method that is called when an exception occurs in the non-gui thread.
-        Overrides the provided threading.excepthook so that we can reset the
-        GUI to a single-thread state.
-        @params - self
-                - args: a tuple containing:
-                        exc_type: an exception type
-                        exc_value: The value passed with the exception
-                        exc_traceback: A traceback object for the exception
-                        thread: Which thread the exception occured in
-        @returns - None
-        """
-        exc_type, exc_value, exc_traceback, thread = args
-
-        print("An exception occured in the non-gui thread:", file=sys.stderr)
-        traceback.print_exception(exc_type, exc_value, exc_traceback)
-
-        self._doing_file = False
-        self._doing_manual = False
-        out_file = self._file_frame.get_outfile()
-        if out_file:
-            out_file.close()
-            self._file_frame.set_outfile(None)
-
-
-        self.enable_entry()
+        self._log_msg_lbl.grid_forget()
 
 
 def main():

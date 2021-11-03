@@ -5,7 +5,9 @@ import csv
 import os
 
 class to_ipa:
-    def __init__(self):
+    def __init__(self, main_model):
+        self._main_model = main_model
+
         self.graph_to_phone_model = G2p()
         self.arpabet_to_ipa_mapping = {'AA': 'ɑ',
                                         'AE': 'æ',
@@ -48,7 +50,7 @@ class to_ipa:
                                         'ZH': 'ʒ'
                                         }
         self.stress = ['', 'ˈ', 'ˌ']
-        
+
     def to_ipa(self, graphemes):
         """ Convert English graphemes to IPA. """
         word = "/"
@@ -59,10 +61,10 @@ class to_ipa:
                 for phone in syl.split(" "):
                     word += self.arpabet_to_ipa_mapping[phone[:2]]
         except:
-            print(f"Unable to find stress for word {graphemes}. Analyzing with no stress markers.", file=sys.stderr)
+            self._main_model.send_to_message_log(f"Unable to find stress for word {graphemes}. Analyzing with no stress markers.")
             for phone in arpa:
                 word += self.arpabet_to_ipa_mapping[phone[:2]]
-        
+
         return word + '/'
 
     def find_stress(self, syllable):
@@ -77,7 +79,7 @@ class to_ipa:
 
 # def add_ipa_to_csv(csv_name):
 #     """ This is a function to be called once, to add IPA translations to a CSV file."""
-#     ipamodel = to_ipa()    
+#     ipamodel = to_ipa()
 #     with open(csv_name, encoding="utf8") as f, open(f"temp_{csv_name}", 'w') as out:
 #         reader = csv.reader(f)
 #         writer = csv.writer(out)
