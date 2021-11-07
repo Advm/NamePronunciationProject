@@ -508,10 +508,14 @@ class Manual_Entry_Frame(GUI_Frame):
         @returns - None
         """
         self._main_model.lock.acquire()
-        messagebox.showinfo(message=str(self._main_model.result.iloc[0][0]) \
-                            + ": " + str(self._main_model.result.iloc[0][1]) + \
-                            "%\n(From 0-100, 100 being hard to pronounce" \
-                            " 0 being easy)")
+        df = self._main_model.result
+        output = f"{df.iloc[0][0]}: ({df.iloc[0][1]}, {df.iloc[0][2]}, " \
+                 f"{df.iloc[0][3]}, {df.loc[0][4]}, {df.iloc[0][5]}, " \
+                 f"{df.iloc[0][6]})\n"
+        output += "Scores are: (Bigrams Letters Score, Bigrams Phoneme Score" \
+                   ", Trigrams Letter Score, Trigrams Phoneme Score, " \
+                   "isEnglishNN Score, LanguageFamilyNN Score)"
+        messagebox.showinfo(message=output)
 
         self._main_model.lock.release()
 
@@ -716,9 +720,11 @@ class File_Entry_Frame(GUI_Frame):
         @return - None
         """
         self._main_model.lock.acquire()
-
+        columns = ["Name", "Bigrams Letters Score", "Bigrams Phoneme Score",
+                   "Trigrams Letter Score", "Trigrams Phoneme Score",
+                   "isEnglishNN Score", "LanguageFamilyNN Score"]
         self._main_model.result.to_csv(self._out_file, index=False,
-                                       header=["Name", "Score"],
+                                       header=columns,
                                        line_terminator = '\n')
         self._out_file.close()
         self._out_file = None
