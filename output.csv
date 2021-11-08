@@ -1,0 +1,6 @@
+Name,Combined Score,Bigrams Letters Score,Bigrams Phoneme Score,Trigrams Letter Score,Trigrams Phoneme Score,isEnglishNN Score,LanguageFamily
+gwen,3.32,2.87,3.16,3.65,3.61,0,Germanic
+kenny,2.2,2.04,1.94,2.42,2.41,0,Germanic
+griffin,2.27,1.91,2.17,2.57,2.41,0,Germanic
+adam,0.95,0.89,0.91,1.0,0.99,0,Germanic
+jack,0.42,0.45,0.41,0.45,0.38,0,Germanic

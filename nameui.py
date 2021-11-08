@@ -510,11 +510,11 @@ class Manual_Entry_Frame(GUI_Frame):
         self._main_model.lock.acquire()
         df = self._main_model.result
         output = f"{df.iloc[0][0]}: ({df.iloc[0][1]}, {df.iloc[0][2]}, " \
-                 f"{df.iloc[0][3]}, {df.loc[0][4]}, {df.iloc[0][5]}, " \
-                 f"{df.iloc[0][6]})\n"
-        output += "Scores are: (Bigrams Letters Score, Bigrams Phoneme Score" \
-                   ", Trigrams Letter Score, Trigrams Phoneme Score, " \
-                   "isEnglishNN Score, LanguageFamilyNN Score)"
+                 f"{df.iloc[0][3]}, {df.iloc[0][4]}, {df.iloc[0][5]}, " \
+                 f"{df.iloc[0][6]}, {df.iloc[0][7]})\n"
+        output += "Scores are: (Combined Score, Bigrams Letters Score, " \
+                   "Bigrams Phoneme Score, Trigrams Letter Score, " \
+                   "Trigrams Phoneme Score, isEnglishNN Score, LanguageFamily)"
         messagebox.showinfo(message=output)
 
         self._main_model.lock.release()
@@ -720,9 +720,10 @@ class File_Entry_Frame(GUI_Frame):
         @return - None
         """
         self._main_model.lock.acquire()
-        columns = ["Name", "Bigrams Letters Score", "Bigrams Phoneme Score",
-                   "Trigrams Letter Score", "Trigrams Phoneme Score",
-                   "isEnglishNN Score", "LanguageFamilyNN Score"]
+        columns = ["Name", "Combined Score", "Bigrams Letters Score",
+                   "Bigrams Phoneme Score", "Trigrams Letter Score",
+                   "Trigrams Phoneme Score", "isEnglishNN Score",
+                   "LanguageFamily"]
         self._main_model.result.to_csv(self._out_file, index=False,
                                        header=columns,
                                        line_terminator = '\n')

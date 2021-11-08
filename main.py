@@ -40,7 +40,7 @@ class MainModel:
         """ Method to be called every time the user submits new words. """
 
         # <names> is a list of every name the user inputted
-        names = list(words[0])
+        names = list(map(lambda x: x.lower(), list(words[0])))
         self.add_progress(10)
 
         # <ipa_names> is a list of the same length containing IPA transcriptions of each name
@@ -49,10 +49,10 @@ class MainModel:
         self.add_progress(30)
 
         # Get n-grams scores
-        bigram_letters = [self.twograms.generate_letter_prob_occurence(name) for name in names]
-        bigram_phonemes = [self.twograms.generate_phoneme_prob_occurence(name) for name in ipa_names]
-        trigram_letters = [self.threegrams.generate_letter_prob_occurence(name) for name in names]
-        trigram_phonemes = [self.threegrams.generate_phoneme_prob_occurence(name) for name in ipa_names]
+        bigram_letters = [round(100 - self.twograms.generate_letter_prob_occurence(name), 2) for name in names]
+        bigram_phonemes = [round(100 - self.twograms.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
+        trigram_letters = [round(100 - self.threegrams.generate_letter_prob_occurence(name), 2) for name in names]
+        trigram_phonemes = [round(100 - self.threegrams.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
         self.add_progress(30)
 
         # get neural net scores
@@ -63,24 +63,31 @@ class MainModel:
         nn_scores = phonemeNN.convert(ipa_names)
         root_NN_scores = rootLanguageNN.convert(ipa_names)
         root_Parents = get_parent_languge(root_NN_scores)
-       
+
         self.add_progress(30)
 
         # TODO:
         #   UPDATE THESE FINAL SCORES TO REFLECT THE NUMBER OF THINGS WE'RE TAKING
         #   INTO ACCOUNT. This includes the 4 different n-gram scores, as well
         #   as however many NN scores we'll have.
-        
-        # final_scores = [round(((nn_scores[i] + ngrams_scores[i]) / 2) * 100, 2)\
-        #                 for i in range(len(ngrams_scores))]
-        # final_scores = [round(100 - x, 2) for x in final_scores]
+
+        final_scores = [round(((bigram_letters[i] + bigram_phonemes[i] + \
+                        trigram_letters[i] + trigram_phonemes[i])) / 4, 2)
+                        for i in range(len(bigram_letters))]
+        #final_scores = [round(100 - x, 2) for x in final_scores]
 
         # Threading Stuff - need to acquire the lock (just to make sure)
         # then write the dataframe to the result attribute before releasing
         # the lock and firing the end thread virtual event
         self.lock.acquire()
         self.result =  pd.concat([pd.DataFrame(names),
-                                   pd.DataFrame(final_scores)],
+                                   pd.DataFrame(final_scores),
+                                   pd.DataFrame(bigram_letters),
+                                   pd.DataFrame(bigram_phonemes),
+                                   pd.DataFrame(trigram_letters),
+                                   pd.DataFrame(trigram_phonemes),
+                                   pd.DataFrame(nn_scores),
+                                   pd.DataFrame(root_Parents)],
                                    axis=1, ignore_index=True)
         self.lock.release()
         self.add_progress(10)
