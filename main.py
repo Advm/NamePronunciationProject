@@ -24,6 +24,7 @@ class MainModel:
         self.ipa_model = to_ipa(self)
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish3.0')
+        self.root_model = tf.keras.models.load_model('RootLanguage')
         self.twograms = ngrams(2)
         self.threegrams = ngrams(3)
 
@@ -57,7 +58,10 @@ class MainModel:
         # get neural net scores
         phonemeNN = convertToModelFormat(self.SAE_model,
                                          pd.read_csv('Allchars.csv'))
+        rootLanguageNN = convertToModelFormat(self.root_model,
+                                         pd.read_csv('Allchars.csv'))
         nn_scores = phonemeNN.convert(ipa_names)
+        root_NN_scores = rootLanguageNN.convert(ipa_names)
         self.add_progress(30)
 
         # TODO:

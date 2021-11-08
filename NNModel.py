@@ -16,7 +16,6 @@ class convertToModelFormat():
         output = []
         for ipaword in inputlist:
             temparr = []
-            #print(ipaword)
             temp = []
             for i in self.columns['Char']:
                 
