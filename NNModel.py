@@ -12,12 +12,13 @@ class convertToModelFormat():
     def __init__(self, model, columns):
         self.model = model
         self.columns = columns
+        self.columns.columns = ["Char(s)"]
     def convert(self, inputlist):
         output = []
         for ipaword in inputlist:
             temparr = []
             temp = []
-            for i in self.columns['Char']:
+            for i in self.columns['Char(s)']:
                 
                 if i in ipaword:
                     temp.append(1)
@@ -27,7 +28,7 @@ class convertToModelFormat():
             #print(temparr)
             #print(pd.read_csv('Allchars.csv')['Char'].values)
             answer = pd.DataFrame(temparr)
-            answer.columns = self.columns['Char'].values
+            answer.columns = self.columns['Char(s)'].values
             prediction = self.model.predict(answer)
             output.append(prediction[0][0])
     
