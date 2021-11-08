@@ -33,29 +33,3 @@ class convertToModelFormat():
             output.append(prediction[0][0])
     
         return output
-def getoutput(wordlist, model):
-    output = []
-    for ipaword in wordlist:
-        temparr = []
-        #print(ipaword)
-        temp = []
-        for i in pd.read_csv('Allchars.csv')['Char']:
-            
-            if i in ipaword:
-                temp.append(1)
-            else:
-                temp.append(0)
-        temparr.append(temp)
-        #print(temparr)
-        #print(pd.read_csv('Allchars.csv')['Char'].values)
-        answer = pd.DataFrame(temparr)
-        answer.columns = pd.read_csv('Allchars.csv')['Char'].values
-        prediction = model.predict(answer)
-        output.append(prediction[0][0])
-    #print(prediction)
-    return output
-
-# print("Loading Model")
-# model = tf.keras.models.load_model('IsAmericanEnglish')
-
-# print(getoutput(["ɹɪˈsɪpɹəˌkeɪtɪŋ","ɪnˈkɔɹpɝˌeɪtɪŋ","hɪstɝi","ʔapˌʃɾɛkʊŋsmɪtel","ɒːtæʃneʃɒːn","²'øːvɛroːɖɳad"],model))

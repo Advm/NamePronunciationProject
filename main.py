@@ -1,7 +1,7 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-from NNModel import getoutput, convertToModelFormat
+from NNModel import convertToModelFormat
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
