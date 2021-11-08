@@ -30,6 +30,27 @@ class convertToModelFormat():
             answer = pd.DataFrame(temparr)
             answer.columns = self.columns['Char(s)'].values
             prediction = self.model.predict(answer)
-            output.append(prediction[0][0])
-    
+            
+            roundedpred = []
+            for i in prediction[0]:
+                roundedpred.append(round(i))
+            output.append(roundedpred)
+        
         return output
+def get_parent_languge(arr):
+    outputs = []
+    for i in arr:
+        if i[0] == 1:
+            outputs.append("Germanic")
+        elif arr[1] == 1:
+            outputs.append("Romance")
+        elif arr[2] == 1:
+            outputs.append("Sino-Tebetan")
+        else:
+            outputs.append("Japonic")   
+    return outputs
+
+
+
+
+

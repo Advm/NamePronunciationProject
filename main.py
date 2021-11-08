@@ -1,7 +1,7 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-from NNModel import convertToModelFormat
+from NNModel import convertToModelFormat, get_parent_languge
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -58,10 +58,12 @@ class MainModel:
         # get neural net scores
         phonemeNN = convertToModelFormat(self.SAE_model,
                                          pd.read_csv('TwoPhonemeSeqs.csv'))
-        # rootLanguageNN = convertToModelFormat(self.root_model,
-        #                                  pd.read_csv('singleChars.csv'))
+        rootLanguageNN = convertToModelFormat(self.root_model,
+                                         pd.read_csv('singleChars.csv'))
         nn_scores = phonemeNN.convert(ipa_names)
-        root_NN_scores = phonemeNN.convert(ipa_names)
+        root_NN_scores = rootLanguageNN.convert(ipa_names)
+        root_Parents = get_parent_languge(root_NN_scores)
+       
         self.add_progress(30)
 
         # TODO:
