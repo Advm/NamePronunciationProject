@@ -23,7 +23,7 @@ class MainModel:
 
         self.ipa_model = to_ipa(self)
         # SAE is "Standard American English"
-        self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish')
+        self.SAE_model = tf.keras.models.load_model('IsAmericanEnglish3.0')
         self.twograms = ngrams(2)
         self.threegrams = ngrams(3)
 
