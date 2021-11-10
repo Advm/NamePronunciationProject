@@ -80,15 +80,15 @@ class MainModel:
         # then write the dataframe to the result attribute before releasing
         # the lock and firing the end thread virtual event
         self.lock.acquire()
-        self.result =  pd.concat([pd.DataFrame(names),
-                                   pd.DataFrame(final_scores),
-                                   pd.DataFrame(bigram_letters),
-                                   pd.DataFrame(bigram_phonemes),
-                                   pd.DataFrame(trigram_letters),
-                                   pd.DataFrame(trigram_phonemes),
-                                   pd.DataFrame(nn_scores),
-                                   pd.DataFrame(root_Parents)],
-                                   axis=1, ignore_index=True)
+        self.result =  pd.concat([words[0],
+                                  pd.DataFrame(final_scores),
+                                  pd.DataFrame(bigram_letters),
+                                  pd.DataFrame(bigram_phonemes),
+                                  pd.DataFrame(trigram_letters),
+                                  pd.DataFrame(trigram_phonemes),
+                                  pd.DataFrame(nn_scores),
+                                  pd.DataFrame(root_Parents)],
+                                  axis=1, ignore_index=True)
         self.lock.release()
         self.add_progress(10)
         self._gui.generate_event("<<ThreadEnded>>")
@@ -155,10 +155,19 @@ def main():
     we create the model first, then the GUI with the model, then set the model's
     gui to be the GUI we just created, before calling the mainloop.
     """
-    model = MainModel()
-    root = Root_Win(model)
-    model.set_gui(root)
+    try:
+        model = MainModel()
+        root = Root_Win(model)
+        model.set_gui(root)
+    except Exception as e:
+        output = "An error occured while setting up the program:\n"
+        output += "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        print(output, file=sys.stderr)
+        sys.exit(1)
+
     root.mainloop()
+
+
 
 
 if __name__ == '__main__':

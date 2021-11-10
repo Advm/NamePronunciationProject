@@ -5,7 +5,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-import threading, traceback, time, logging, logging.config
+import threading, traceback, time, logging, logging.config, datetime
+from logging.handlers import TimedRotatingFileHandler
 # Makes sure we are running a threaed tkinter build
 Tcl().eval('set tcl_platform(threaded)')
 
@@ -18,11 +19,6 @@ class Root_Win:
     object of all the frames. Provides methods for manipulating the frames
     as a whole frame. Object that is created by main file for creating the GUI
     """
-
-    # Integer codes for logging levels
-    info = 20
-    warn = 30
-    error = 40
 
     # Format for logs
     formatter = logging.Formatter('%(asctime)s | %(levelname)s\n%(message)s',
@@ -49,24 +45,23 @@ class Root_Win:
         # Overrides the thread exception handling
         threading.excepthook = self.catch_thread_exception
         # Overrides gui thread exception handling
-        sys.excepthook = self.catch_exception
+        #sys.excepthook = self.catch_exception
+        Tk.report_callback_exception = self.catch_exception
 
-        # log files
-        message_handler = logging.FileHandler('message.log')
-        error_handler = logging.FileHandler('error.log')
+        # log files - Rollover every monday at midnight -> must keep one backup (doesn't work otherwise)
+        message_handler = TimedRotatingFileHandler('message.log', when='W0', atTime=datetime.time(), backupCount=1)
+        error_handler = TimedRotatingFileHandler('error.log', when='W0', atTime=datetime.time(), backupCount=1)
         message_handler.setFormatter(Root_Win.formatter)
         error_handler.setFormatter(Root_Win.formatter)
 
         self._message_log = logging.getLogger("Message Log")
         self._error_log =  logging.getLogger("Error Log")
 
-        self._message_log.setLevel(Root_Win.info)
-        self._error_log.setLevel(Root_Win.error)
+        self._message_log.setLevel(logging.INFO)
+        self._error_log.setLevel(logging.INFO)
 
         self._message_log.addHandler(message_handler)
         self._error_log.addHandler(error_handler)
-
-
 
         # Virtual Event bindings.
         # IF YOU WANT A VIRTUAL EVENT TO RUN A METHOD WHEN FIRED,
@@ -191,6 +186,11 @@ class Root_Win:
 
         self.enable_entry()
         self.reset_progress()
+        self.to_message_log("Sucesfully finished main program execution.",
+                            logging.INFO)
+        self.to_error_log("Sucesfully finished main program execution.",
+                          logging.INFO)
+
 
     def hide_prog_lbl(self):
         """
@@ -270,15 +270,15 @@ class Root_Win:
         message = self._main_model.to_gui_message
         # Whether we want to output a warning or a message
         if self._main_model.is_warning:
-            level = Root_Win.warn
+            level = logging.WARN
             self._progress_frame.show_label()
         else:
-            level = Root_Win.info
+            level = logging.INFO
         self._main_model.lock.release()
 
         self.to_message_log(message, level)
 
-    def to_message_log(self, output, level):
+    def to_message_log(self, output, level=logging.WARN):
         """
         Wrapper Method for _message_log's .log method for logging a message.
         @params - self
@@ -289,22 +289,24 @@ class Root_Win:
         """
         self._message_log.log(level, output)
 
-    def to_error_log(self, output):
+    def to_error_log(self, output, level=logging.ERROR):
         """
         Wrapper Method for _error_log's .error method for logging an error.
         @params - self
                 - output: the message to be output
+                - level: An integer denoting the level of the message
+                  (info is 20, warning 30, error 40)
 
         @returns - None
         """
-        self._error_log.error(output)
+        self._error_log.log(level, output)
 
 
     def catch_exception(self, exc_type, exc_value, exc_traceback):
         """
         Method that is called when an exception occurs in the gui thread.
-        Overrides the provided sys.excepthook so that we can write the error a
-        log, then exit the program with a return value of 1, indicating error.
+        We write the error to the error log then exit the program with a
+        return value of 1, indicating error.
         @params - self
                 - exc_type: an exception type
                 - exc_value: The value passed with the exception
@@ -415,17 +417,18 @@ class Intro_Frame(GUI_Frame):
         self._label = ttk.Label(self._frame, text="Hello! Welcome to " \
                                 "the name pronuncation program!")
         # for debugging
-        self._thrd_button = ttk.Button(self._frame, text="threads",
-                                       command=self.count_threads)
+        self._error_button = ttk.Button(self._frame, text="error",
+                                       command=self.throw_error)
         self._label.grid(row = 0, column = 0)
-        #self._thrd_button.grid(row = 1, column = 0)
+        #self._error_button.grid(row = 1, column = 0)
         # To add options........
 
-    def count_threads(self):
+    def throw_error(self):
         """
         Debugging method
         """
-        print("Number of threads", threading.active_count())
+        raise ValueError("Hi")
+        #print("Number of threads", threading.active_count())
 
 
 class Manual_Entry_Frame(GUI_Frame):
@@ -493,6 +496,10 @@ class Manual_Entry_Frame(GUI_Frame):
                                         target=self._main_model.process_input,
                                         args=(in_data,), daemon=True))
             # run the thread
+            self._parent.to_message_log("Starting main program execution.",
+                                        logging.INFO)
+            self._parent.to_error_log("Starting main program execution.",
+                                      logging.INFO)
             self._parent.get_thread().start()
         else:
             messagebox.showinfo(message="Please enter something")
@@ -509,15 +516,48 @@ class Manual_Entry_Frame(GUI_Frame):
         """
         self._main_model.lock.acquire()
         df = self._main_model.result
-        output = f"{df.iloc[0][0]}: ({df.iloc[0][1]}, {df.iloc[0][2]}, " \
-                 f"{df.iloc[0][3]}, {df.iloc[0][4]}, {df.iloc[0][5]}, " \
-                 f"{df.iloc[0][6]}, {df.iloc[0][7]})\n"
-        output += "Scores are: (Combined Score, Bigrams Letters Score, " \
-                   "Bigrams Phoneme Score, Trigrams Letter Score, " \
-                   "Trigrams Phoneme Score, isEnglishNN Score, LanguageFamily)"
-        messagebox.showinfo(message=output)
-
         self._main_model.lock.release()
+        # output = f"{df.iloc[0][0]}: ({df.iloc[0][1]}, {df.iloc[0][2]}, " \
+        #          f"{df.iloc[0][3]}, {df.iloc[0][4]}, {df.iloc[0][5]}, " \
+        #          f"{df.iloc[0][6]}, {df.iloc[0][7]})\n"
+        # output += "Scores are: (Combined Score, Bigrams Letters Score, " \
+        #            "Bigrams Phoneme Score, Trigrams Letter Score, " \
+        #            "Trigrams Phoneme Score, isEnglishNN Score, LanguageFamily)"
+        # messagebox.showinfo(message=output)
+        outwin = Toplevel(self._parent.get_win())
+        outwin.title("Output")
+        def close():
+                outwin.grab_release()
+                outwin.destroy()
+
+        outwin.protocol("WM_DELETE_WINDOW", close) # intercept close button
+        outwin.wait_visibility() # can't grab until window appears, so we wait
+        outwin.grab_set()        # ensure all input goes to our window
+
+        col_names = ('Name', 'Combined Score', 'Bigrams Letter Score',
+                     'Bigrams Phoneme Score', 'Trigrams Letter Score',
+                     'Trigrams Phoneme Score', 'isEnglishNN', 'LanguageFamilyNN')
+        tree = ttk.Treeview(outwin, columns=col_names, show='headings',
+                            height = 1, selectmode="none")
+        #tree.config['height'] = 1
+        for name in col_names:
+            #tree.column(name, width=200)
+            tree.heading(name, text=name)
+
+
+        output = [df.iloc[0][0], df.iloc[0][1], df.iloc[0][2],
+                  df.iloc[0][3], df.iloc[0][4], df.iloc[0][5],
+                  df.iloc[0][6], df.iloc[0][7]]
+        #names = list(map(lambda x: str(x), output))
+
+        # END is from tk: tk.END
+        tree.insert('', END, values=output)
+
+        exit_button = ttk.Button(outwin, text="Back", command=close)
+        tree.grid(row = 0, column = 0, pady=10, padx = 5)
+        exit_button.grid(row = 1, column = 0, pady = (0, 5))
+        outwin.wait_window()     # block until window is destroyed
+
 
 
 class File_Entry_Frame(GUI_Frame):
@@ -709,6 +749,10 @@ class File_Entry_Frame(GUI_Frame):
                                     args=(in_data,), daemon=True))
 
         # Run the thread
+        self._parent.to_message_log("Starting main program execution.",
+                                    logging.INFO)
+        self._parent.to_error_log("Starting main program execution.",
+                                  logging.INFO)
         self._parent.get_thread().start()
 
     def thread_finished(self):
@@ -720,10 +764,10 @@ class File_Entry_Frame(GUI_Frame):
         @return - None
         """
         self._main_model.lock.acquire()
-        columns = ["Name", "Combined Score", "Bigrams Letters Score",
-                   "Bigrams Phoneme Score", "Trigrams Letter Score",
-                   "Trigrams Phoneme Score", "isEnglishNN Score",
-                   "LanguageFamily"]
+        columns = ['Name', 'Combined Score', 'Bigrams Letter Score',
+                   'Bigrams Phoneme Score', 'Trigrams Letter Score',
+                   'Trigrams Phoneme Score', 'isEnglishNN', 'LanguageFamilyNN']
+
         self._main_model.result.to_csv(self._out_file, index=False,
                                        header=columns,
                                        line_terminator = '\n')
