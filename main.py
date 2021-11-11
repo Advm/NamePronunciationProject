@@ -36,26 +36,27 @@ class MainModel:
         self.result = None
         self.lock = threading.Lock()
 
-    def process_input(self, words):
+    def processInput(self, words):
         """ Method to be called every time the user submits new words. """
 
         # <names> is a list of every name the user inputted
         names = list(map(lambda x: x.lower(), list(words[0])))
-        self.add_progress(10)
+        self.addProgress(10)
 
         # <ipa_names> is a list of the same length containing IPA transcriptions of each name
         #   i.e., ipa_names[i] is an IPA transcription of names[i]
         ipa_names = [self.ipa_model.to_ipa(name)[1:-1] for name in names]
-        self.add_progress(30)
+        self.addProgress(30)
 
         # Get n-grams scores
         bigram_letters = [round(100 - self.twograms.generate_letter_prob_occurence(name), 2) for name in names]
         bigram_phonemes = [round(100 - self.twograms.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
         trigram_letters = [round(100 - self.threegrams.generate_letter_prob_occurence(name), 2) for name in names]
         trigram_phonemes = [round(100 - self.threegrams.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
-        self.add_progress(30)
+        self.addProgress(30)
 
         # get neural net scores
+        # Tnks seems to take a while?
         phonemeNN = convertToModelFormat(self.SAE_model,
                                          pd.read_csv('TwoPhonemeSeqs.csv'))
         rootLanguageNN = convertToModelFormat(self.root_model,
@@ -64,7 +65,7 @@ class MainModel:
         root_NN_scores = rootLanguageNN.convert(ipa_names)
         root_Parents = get_parent_languge(root_NN_scores)
 
-        self.add_progress(30)
+        self.addProgress(30)
 
         # TODO:
         #   UPDATE THESE FINAL SCORES TO REFLECT THE NUMBER OF THINGS WE'RE TAKING
@@ -90,10 +91,10 @@ class MainModel:
                                   pd.DataFrame(root_Parents)],
                                   axis=1, ignore_index=True)
         self.lock.release()
-        self.add_progress(10)
-        self._gui.generate_event("<<ThreadEnded>>")
+        self.addProgress(10)
+        self._gui.generateEvent("<<ThreadEnded>>")
 
-    def set_gui(self, gui_win):
+    def setGUI(self, gui_win):
         """
         Method used to set the object's gui attribute.
         @params - self
@@ -102,7 +103,7 @@ class MainModel:
         """
         self._gui = gui_win
 
-    def add_progress(self, value):
+    def addProgress(self, value):
         """
         Method used to add progress to the progress bar. Sets prog_val to value
         and then fires the virtual event to add progress
@@ -113,9 +114,9 @@ class MainModel:
         self.lock.acquire()
         self.prog_val = value
         self.lock.release()
-        self._gui.generate_event("<<AddProgress>>")
+        self._gui.generateEvent("<<AddProgress>>")
 
-    def send_to_message_log(self, output, warning=True):
+    def sendToMessageLog(self, output, warning=True):
         """
         Method used to output a message to the message log. Sets is_warning to
         warning, to_gui_message to output, and fires the
@@ -130,7 +131,7 @@ class MainModel:
         self.is_warning = warning
         self.to_gui_message = output
         self.lock.release()
-        self._gui.generate_event("<<SendMessage>>")
+        self._gui.generateEvent("<<SendMessage>>")
 
 
     def test_gui(self, words):
@@ -143,9 +144,9 @@ class MainModel:
         self.lock.acquire()
         self.result = pd.concat([words, column2], axis=1, ignore_index=True)
         self.lock.release()
-        self.add_progress(100)
-        #self.send_to_message_log("Hi", False)
-        self._gui.generate_event("<<ThreadEnded>>")
+        self.addProgress(100)
+        #self.sendToMessageLog("Hi", False)
+        self._gui.generateEvent("<<ThreadEnded>>")
 
 def main():
     """
@@ -157,15 +158,15 @@ def main():
     """
     try:
         model = MainModel()
-        root = Root_Win(model)
-        model.set_gui(root)
+        root = RootWin(model)
+        model.setGUI(root)
     except Exception as e:
         output = "An error occured while setting up the program:\n"
         output += "".join(traceback.format_exception(type(e), e, e.__traceback__))
         print(output, file=sys.stderr)
         sys.exit(1)
 
-    root.mainloop()
+    root.mainLoop()
 
 
 

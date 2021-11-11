@@ -61,12 +61,12 @@ class to_ipa:
                 for phone in syl.split(" "):
                     word += self.arpabet_to_ipa_mapping[phone[:2]]
         except:
-            self._main_model.send_to_message_log(f"Unable to find stress for word {graphemes}. Analyzing with no stress markers.")
+            self._main_model.sendToMessageLog(f"Unable to find stress for word {graphemes}. Analyzing with no stress markers.")
             for phone in arpa:
                 try:
                     word += self.arpabet_to_ipa_mapping[phone[:2]]
                 except:
-                    self._main_model.send_to_message_log(f"Unable to interpret syllable {phone}. Ignoring.")
+                    self._main_model.sendToMessageLog(f"Unable to interpret syllable {phone}. Ignoring.")
         return word + '/'
 
     def find_stress(self, syllable):
