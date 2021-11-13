@@ -7,7 +7,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import math
 from random import choice
-from ngrams import ngrams
+from ngrams import Ngrams
 import os
 
 
@@ -25,8 +25,8 @@ class MainModel:
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglishv3.0')
         self.root_model = tf.keras.models.load_model('RootLanguageModel')
-        self.twograms = ngrams(2)
-        self.threegrams = ngrams(3)
+        self.twograms = Ngrams(2)
+        self.threegrams = Ngrams(3)
 
         # Needed to communicate/share data across threads
         self._gui = None
@@ -49,10 +49,10 @@ class MainModel:
         self.addProgress(30)
 
         # Get n-grams scores
-        bigram_letters = [round(100 - self.twograms.generate_letter_prob_occurence(name), 2) for name in names]
-        bigram_phonemes = [round(100 - self.twograms.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
-        trigram_letters = [round(100 - self.threegrams.generate_letter_prob_occurence(name), 2) for name in names]
-        trigram_phonemes = [round(100 - self.threegrams.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
+        bigram_letters = [round(100 - self.twograms.generateLetterProbOccurence(name), 2) for name in names]
+        bigram_phonemes = [round(100 - self.twograms.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
+        trigram_letters = [round(100 - self.threegrams.generateLetterProbOccurence(name), 2) for name in names]
+        trigram_phonemes = [round(100 - self.threegrams.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
         self.addProgress(30)
 
         # get neural net scores
