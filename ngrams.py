@@ -1,5 +1,5 @@
 import csv
-class ngrams:
+class Ngrams:
     def __init__(self, length, corpus="ipa_dicts/english-general_american.csv", occurence_table="unigram_freq.csv"):
         self.length = length
         self.corpus = corpus
@@ -8,10 +8,50 @@ class ngrams:
         self.phoneme_dictionary = {}
         self.letter_occurence_dictionary = {}
         self.phoneme_occurence_dictionary = {}
-        self._generate_ngram_dictionaries()
-        self._generate_occurence_dictionaries()
-    
-    def _generate_occurence_dictionaries(self):
+        self._generateNgramDictionaries()
+        #self._generateOtherOccurrenceDictionaries()
+        self._generateOccurrenceDictionaries()
+
+    def _generateOtherOccurrenceDictionaries(self):
+        """ Opens and creates dictionaries that map each gram in the occurence dictionary to 
+        how often it occurs, (most is 1, least is 0)"""
+        print("starting to generate dictionaries")
+        with open(self.occurence_table, encoding="utf8") as f:
+            for row in csv.reader(f):
+                #row[0] is the word, row[1] is the phoneme, row[2] is the occurence value
+                letter_grams = self.generateNgrams(row[0])
+                phoneme_grams = self.generateNgrams(row[1]) 
+                for gram in letter_grams:
+                    if self.letter_occurence_dictionary.get(gram) is None:
+                        self.letter_occurence_dictionary.update({gram: row[2]})
+                    else:
+                        num = self.letter_occurence_dictionary.get(gram)
+                        self.letter_occurence_dictionary.update({gram: num + row[2]})
+                #print("finished letter dictionaries")
+                for gram in phoneme_grams:
+                    if self.phoneme_occurence_dictionary.get(gram) is None:
+                        self.phoneme_occurence_dictionary.update({gram: row[2]})
+                    else:
+                        num = self.phoneme_occurence_dictionary.get(gram)
+                        self.phoneme_occurence_dictionary.update({gram: num + row[2]})
+        
+        #now we have the dictionaries with the total occurences. sort them from highest to lowest
+        # and then scale them
+        print("generated non-scaled dictionaries")
+        # print(self.letter_occurence_dictionary)
+        # print(self.phoneme_occurence_dictionary)
+        letter_sorted = sorted(self.letter_occurence_dictionary, key=self.letter_occurence_dictionary.get)
+        for i in range(len(self.letter_occurence_dictionary)):
+            self.letter_occurence_dictionary.update({letter_sorted[i]: ((i + 1) / len(self.letter_occurence_dictionary))})
+
+        phoneme_sorted = sorted(self.phoneme_occurence_dictionary, key=self.phoneme_occurence_dictionary.get)
+        for i in range(len(self.phoneme_occurence_dictionary)):
+            self.phoneme_occurence_dictionary.update({phoneme_sorted[i]: ((i + 1) / len(self.phoneme_occurence_dictionary))})
+
+        print("dont think we get here")
+        return
+
+    def _generateOccurrenceDictionaries(self):
         """ Opens and creates dictionaries that map each word/phoneme to how often it occurs
             (most is 1, least is 0)"""
         count = 0
@@ -29,7 +69,7 @@ class ngrams:
                 self.phoneme_occurence_dictionary[row[1]] = ((333333 - count) / 333333)
                 count += 1
 
-    def generate_ngrams(self, str):
+    def generateNgrams(self, str):
         """ Given a string and an n, return a list of all grams of that length"""
         answer = []
         for i in range(0, len(str) - self.length + 1):
@@ -37,7 +77,7 @@ class ngrams:
             answer.append(str[i:end])
         return answer
 
-    def _generate_ngram_dictionaries(self):
+    def _generateNgramDictionaries(self):
         """ Generates the dictionaries for both letters and phonemes, keeping track of
             the total occurences"""
         with open(self.corpus, encoding="utf8") as f:
@@ -48,7 +88,7 @@ class ngrams:
                 for w in row[1].split(', ')]
 
         for str in letter_corpus:
-            letter_grams = self.generate_ngrams(str)         
+            letter_grams = self.generateNgrams(str)         
             for gram in letter_grams:
                 if self.letter_dictionary.get(gram) is None:
                     self.letter_dictionary.update({gram: 1})
@@ -57,7 +97,7 @@ class ngrams:
                     self.letter_dictionary.update({gram: num + 1})
 
         for str in phoneme_corpus:
-            phoneme_grams = self.generate_ngrams(str)
+            phoneme_grams = self.generateNgrams(str)
             for gram in phoneme_grams:
                 if self.phoneme_dictionary.get(gram) is None:
                     self.phoneme_dictionary.update({gram: 1})
@@ -67,75 +107,87 @@ class ngrams:
    
         return 
 
-    def generate_dictionary_letter_probability(self, word):
+    def generateDictionaryLetterProb(self, word):
         """ Given a word, scale data with 100 == most occurences in the dictionary,
             not to be confused with the occurence csv"""
-        grams = self.generate_ngrams(word)
+        grams = self.generateNgrams(word)
         max_occurences = max(self.letter_dictionary.values()) / 100
-        average_gram_probability = 0
+        average_gram_prob = 0
         for gram in grams:
             if self.letter_dictionary.get(gram) == None:
                 #if the gram is not in the dictionary, treat it as zero to avoid
                 #dividing NoneType
                 continue
-            average_gram_probability += self.letter_dictionary.get(gram) / max_occurences
+            average_gram_prob += self.letter_dictionary.get(gram) / max_occurences
             
-        if average_gram_probability != 0:
-            average_gram_probability = average_gram_probability / len(grams)
-        return average_gram_probability
+        if average_gram_prob != 0:
+            average_gram_prob = average_gram_prob / len(grams)
+        return average_gram_prob
 
-    def generate_dictionary_phoneme_probability(self, word):
+    def generateDictionaryPhonemeProb(self, word):
         """ Given a phoneme, scale data with 100 == most occurences in the dictionary,
             not to be confused with the occurence csv"""
-        grams = self.generate_ngrams(word)
+        grams = self.generateNgrams(word)
         max_occurences = max(self.phoneme_dictionary.values()) / 100
-        average_gram_probability = 0
+        average_gram_prob = 0
         for gram in grams:
             if self.phoneme_dictionary.get(gram) == None:
                 #if the gram is not in the dictionary, treat it as zero to avoid
                 #dividing NoneType
                 continue
-            average_gram_probability += self.phoneme_dictionary.get(gram) / max_occurences
+            average_gram_prob += self.phoneme_dictionary.get(gram) / max_occurences
             
-        if average_gram_probability != 0:
-            average_gram_probability = average_gram_probability / len(grams)
-        return average_gram_probability
+        if average_gram_prob != 0:
+            average_gram_prob = average_gram_prob / len(grams)
+        return average_gram_prob
 
-    def generate_letter_prob_occurence(self, word):
-        """ Given a word, call generate_dictionary_letter_probability, and then scale it up
+    def generateLetterProbOccurence(self, word):
+        """ Given a word, call generateDictionaryLetterProb, and then scale it up
             using the letter occurence table"""
-        probability = self.generate_dictionary_letter_probability(word)
+        prob = self.generateDictionaryLetterProb(word)
         if self.letter_occurence_dictionary.get(word) == None:
             #word is not in the occurence dictionary, so no scaling is done
-            return probability
+            return prob
         scaler = float(self.letter_occurence_dictionary[word]) 
-        probability += (100 - probability) * scaler
-        return probability
+        prob += (100 - prob) * scaler
+        return prob
 
-    def generate_phoneme_prob_occurence(self, phoneme):
-        """ Given a phoneme, call generate_dictionary_phoneme_probability, and then scale it up
+    def generatePhonemeProbOccurence(self, phoneme):
+        """ Given a phoneme, call generateDictionaryPhonemeProb, and then scale it up
             using the phoneme occurence table"""
-        probability = self.generate_dictionary_phoneme_probability(phoneme)
+        prob = self.generateDictionaryPhonemeProb(phoneme)
         if self.phoneme_occurence_dictionary.get(phoneme) == None:
             #phoneme is not in the occurence dictionary, so no scaling is done
-            return probability
+            return prob
         scaler = float(self.phoneme_occurence_dictionary[phoneme]) 
-        probability += (100 - probability) * scaler
-        return probability
+        prob += (100 - prob) * scaler
+        return prob
 
 
+# def generateLetterProbOccurence(self, word):
+#         """ Given a word, call generateDictionaryLetterProb, and then scale it up
+#             using the letter occurence table"""
+        # prob = self.generateDictionaryLetterProb(word)
+        # average_scaler = 0
+        # for gram in self.generateNgrams(word):
+        #     if self.letter_occurence_dictionary.get(gram) == None:
+        #         continue
+        #     average_scaler += float(self.letter_occurence_dictionary[gram])
+        # if average_scaler != 0:
+        #     average_scaler = average_scaler / len(self.generateNgrams(word))
+        # prob += (100 - prob) * average_scaler
+        # return prob
 
-
-# def generate_probability(self, word):
-#     """ Given a word, compute the average gram probability """
-#     grams = self.generate_ngrams(word)
-#     average_gram_probability = 0
+# def generate_prob(self, word):
+#     """ Given a word, compute the average gram prob """
+#     grams = self.generateNgrams(word)
+#     average_gram_prob = 0
 #     for gram in grams:
-#         average_gram_probability += self.dictionary.get(gram) / self.population
+#         average_gram_prob += self.dictionary.get(gram) / self.population
     
-#     if average_gram_probability != 0:
-#         average_gram_probability = average_gram_probability / len(grams)
-#     return average_gram_probability
+#     if average_gram_prob != 0:
+#         average_gram_prob = average_gram_prob / len(grams)
+#     return average_gram_prob
 
 # data = ["hello", "world", "Ihope", "thisworks"]
 # bi_gram = ngrams(data, 2)
@@ -144,7 +196,7 @@ class ngrams:
     # def ngrams_word_algorithm(word):
     #     """ Given a word, compute the tri_grams and get the average tri-gram value of the word 
     #         from the corpus """
-    #     word_trigrams = self.generate_ngrams(word, 3)
+    #     word_trigrams = self.generateNgrams(word, 3)
     #     average_trigram_prob = 0
     #     for gram in word_trigrams:
     #         average_trigram_prob += tri_grams.get(gram) / bi_grams.get(gram[:-1])
@@ -159,7 +211,7 @@ class ngrams:
     # def ngrams_phoneme_algorithm(phoneme):
     #     """ Given a phoneme, compute the z-score from the average of the bi-gram calculations
     #         and convert to a float between 0-1 """
-    #     word_bigrams = generate_ngrams(phoneme, 2)
+    #     word_bigrams = generateNgrams(phoneme, 2)
 
     #     average_bigram_prob = 0
     #     for gram in word_bigrams:
