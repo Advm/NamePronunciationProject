@@ -42,9 +42,9 @@ def get_parent_languge(arr):
     for i in arr:
         if i[0] == 1:
             outputs.append("Germanic")
-        elif arr[1] == 1:
+        elif i[1] == 1:
             outputs.append("Romance")
-        elif arr[2] == 1:
+        elif i[2] == 1:
             outputs.append("Sino-Tebetan")
         else:
             outputs.append("Japonic")   
