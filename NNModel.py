@@ -1,5 +1,5 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
@@ -19,7 +19,7 @@ class convertToModelFormat():
             temparr = []
             temp = []
             for i in self.columns['Char(s)']:
-                
+
                 if i in ipaword:
                     temp.append(1)
                 else:
@@ -30,12 +30,12 @@ class convertToModelFormat():
             answer = pd.DataFrame(temparr)
             answer.columns = self.columns['Char(s)'].values
             prediction = self.model.predict(answer)
-            
+
             roundedpred = []
             for i in prediction[0]:
                 roundedpred.append(round(i))
             output.append(roundedpred)
-        
+
         return output
 def get_parent_languge(arr):
     outputs = []
@@ -47,10 +47,5 @@ def get_parent_languge(arr):
         elif i[2] == 1:
             outputs.append("Sino-Tebetan")
         else:
-            outputs.append("Japonic")   
+            outputs.append("Japonic")
     return outputs
-
-
-
-
-
