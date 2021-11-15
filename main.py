@@ -67,15 +67,9 @@ class MainModel:
 
         self.addProgress(30)
 
-        # TODO:
-        #   UPDATE THESE FINAL SCORES TO REFLECT THE NUMBER OF THINGS WE'RE TAKING
-        #   INTO ACCOUNT. This includes the 4 different n-gram scores, as well
-        #   as however many NN scores we'll have.
-
         final_scores = [round(((bigram_letters[i] + bigram_phonemes[i] + \
                         trigram_letters[i] + trigram_phonemes[i])) / 4, 2)
                         for i in range(len(bigram_letters))]
-        #final_scores = [round(100 - x, 2) for x in final_scores]
 
         # Threading Stuff - need to acquire the lock (just to make sure)
         # then write the dataframe to the result attribute before releasing
