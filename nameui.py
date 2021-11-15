@@ -541,7 +541,7 @@ class ManualEntryFrame(GUIFrame):
                             height = 1, selectmode="none")
         #tree.config['height'] = 1
         for name in col_names:
-            #tree.column(name, width=200)
+            tree.column(name, width=140)
             tree.heading(name, text=name)
 
 
