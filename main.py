@@ -46,14 +46,15 @@ class MainModel:
         # <ipa_names> is a list of the same length containing IPA transcriptions of each name
         #   i.e., ipa_names[i] is an IPA transcription of names[i]
         ipa_names = [self.ipa_model.to_ipa(name)[1:-1] for name in names]
-        self.addProgress(30)
-
+        self.addProgress(15)
+        self.sendToMessageLog("IPA conversion complete", False)
         # Get n-grams scores
         bigram_letters = [round(100 - self.twograms.generate_letter_prob_occurence(name), 2) for name in names]
         bigram_phonemes = [round(100 - self.twograms.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
         trigram_letters = [round(100 - self.threegrams.generate_letter_prob_occurence(name), 2) for name in names]
         trigram_phonemes = [round(100 - self.threegrams.generate_phoneme_prob_occurence(name), 2) for name in ipa_names]
-        self.addProgress(30)
+        self.addProgress(20)
+        self.sendToMessageLog("N-gram calculations complete", False)
 
         # get neural net scores
         # Tnks seems to take a while?
@@ -65,7 +66,8 @@ class MainModel:
         root_NN_scores = rootLanguageNN.convert(ipa_names)
         root_Parents = get_parent_languge(root_NN_scores)
 
-        self.addProgress(30)
+        self.addProgress(50)
+        self.sendToMessageLog("Neural Network calculations complete", False)
 
         # TODO:
         #   UPDATE THESE FINAL SCORES TO REFLECT THE NUMBER OF THINGS WE'RE TAKING
@@ -91,7 +93,7 @@ class MainModel:
                                   pd.DataFrame(root_Parents)],
                                   axis=1, ignore_index=True)
         self.lock.release()
-        self.addProgress(10)
+        self.addProgress(5)
         self._gui.generateEvent("<<ThreadEnded>>")
 
     def setGUI(self, gui_win):
