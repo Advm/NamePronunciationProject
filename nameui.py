@@ -82,16 +82,13 @@ class RootWin:
         self._intro_frame._frame.grid(row = 0, column = 0, padx = 10, pady = 10,
                                       sticky="NSEW")
         self._manual_frame._frame.grid(row = 0, column = 1,
-                                       padx = 10, pady = 10, sticky="NSEW")
+                                       padx = 10, pady = 10, sticky="NSW")
         self._file_frame._frame.grid(row = 1, column = 0,
                                        padx = 10, pady = 10, sticky="NSEW")
         self._progress_frame._frame.grid(row = 1, column = 1,
                                          padx = 10, pady = 10, sticky = "NSEW")
 
-        self._win.columnconfigure(0, weight=2)
-        self._win.columnconfigure(1, weight=2)
-        self._win.rowconfigure(0, weight=2)
-        self._win.rowconfigure(1, weight=2)
+
 
 
     def exitProgram(self):
@@ -107,7 +104,7 @@ class RootWin:
             box_msg += " Warning! The main program is currently running. " \
                        "If you exit, it will stop running."
         out = messagebox.showinfo(type="yesno",
-                                   message=box_msg)
+                                   message=box_msg, title="Exit")
         # cancel exit
         if out == "no":
             return
@@ -192,14 +189,6 @@ class RootWin:
                           logging.INFO)
 
 
-    def hide_prog_lbl(self):
-        """
-        Wrapper for progress frame's hide_label
-        @params - self
-        @returns - None
-        """
-        self._progress_frame.hide_label()
-
     def setThread(self, value):
         """
         Method for setting the object's thread attribute
@@ -271,7 +260,6 @@ class RootWin:
         # Whether we want to output a warning or a message
         if self._main_model.is_warning:
             level = logging.WARN
-            self._progress_frame.show_label()
         else:
             level = logging.INFO
         self._main_model.lock.release()
@@ -288,6 +276,10 @@ class RootWin:
         @returns - None
         """
         self._message_log.log(level, output)
+        if(level == logging.WARN):
+            self._progress_frame.addText(f"Warning: {output}")
+        else:
+            self._progress_frame.addText(output)
 
     def toErrorLog(self, output, level=logging.ERROR):
         """
@@ -352,6 +344,8 @@ class RootWin:
         messagebox.showinfo(message=f"An uncaught error of type: {exc_type}, " \
                                      "occurred in the non-gui thread. Check " \
                                      "error.log for more details.")
+        self._progress_frame.addText("An error has occured in the main program"\
+                                     ". Check the error log for more details.")
 
         self._doing_file = False
         self._doing_manual = False
@@ -481,7 +475,6 @@ class ManualEntryFrame(GUIFrame):
             self._user_in.set("")
             in_data = pd.DataFrame([user_input])
             self._parent.disableEntry()
-            self._parent.hide_prog_lbl()
 
             # Set up the thread
 
@@ -537,11 +530,15 @@ class ManualEntryFrame(GUIFrame):
         col_names = ('Name', 'Combined Score', 'Bigrams Letter Score',
                      'Bigrams Phoneme Score', 'Trigrams Letter Score',
                      'Trigrams Phoneme Score', 'isEnglishNN', 'LanguageFamilyNN')
+
+
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=(None, 10))
         tree = ttk.Treeview(outwin, columns=col_names, show='headings',
                             height = 1, selectmode="none")
-        #tree.config['height'] = 1
+
         for name in col_names:
-            tree.column(name, width=140)
+            tree.column(name, width=175)
             tree.heading(name, text=name)
 
 
@@ -733,7 +730,6 @@ class FileEntryFrame(GUIFrame):
         # Setting GUI to a two thread state
         self._parent.setDoingFile(True)
         self._parent.disableEntry()
-        self._parent.hide_prog_lbl()
 
         # Setting up the thread
 
@@ -796,12 +792,14 @@ class ProgressFrame(GUIFrame):
         self._progress_value = IntVar()
         self._progress_bar = ttk.Progressbar(self._frame, length=250, mode=
                                              "determinate", variable=self._progress_value)
-        self._log_msg_lbl = ttk.Label(self._frame,
-                                  text = "A warning has been sent to the message log")
-        self._progress_bar.grid(row = 0, column = 0, sticky="NSEW", padx=5, pady=5)
 
-        self._log_msg_lbl.grid(row = 0, column = 1, padx=5, pady=5)
-        self._log_msg_lbl.grid_forget()
+        self._textCapacity = 10
+        self._text_field = Text(self._frame, height = self._textCapacity, width = 100)
+        self._text_field['state'] = 'disabled'
+        self._textLines = 1
+
+        self._progress_bar.grid(row = 0, column = 0, sticky="NSEW", padx=5, pady=5)
+        self._text_field.grid(row = 1, column = 0, padx = 5, pady = 5)
 
 
     def addProgress(self, value):
@@ -823,21 +821,25 @@ class ProgressFrame(GUIFrame):
         """
         self._progress_value.set(0)
 
-    def show_label(self):
-        """
-        Method for showing the log message label
-        @params - self
-        @returns - None
-        """
-        self._log_msg_lbl.grid()
+    def addText(self, message):
+        self._text_field['state'] = 'normal'
+        # If we have extra space in the text field
+        if(self._textLines < self._textCapacity):
+            self._text_field.insert(f"{self._textLines}.0", f"{message}\n")
+            self._textLines += 1
+        elif(self._textLines == self._textCapacity):
+            self._text_field.insert(f"{self._textLines}.0", f"{message}")
+            self._textLines += 1
+        else: # size > capacity
+            last = message
+            for index in reversed(range(1, self._textCapacity + 1)):
+                temp = self._text_field.get(f"{index}.0", f"{index}.end")
+                self._text_field.replace(f"{index}.0", f"{index}.end",
+                                         f"{last}")
+                last = temp
 
-    def hide_label(self):
-        """
-        Method for hiding the log message label
-        @params - self
-        @returns - None
-        """
-        self._log_msg_lbl.grid_forget()
+        self._text_field['state'] = 'disabled'
+
 
 
 def main():
