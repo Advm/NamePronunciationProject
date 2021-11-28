@@ -1,4 +1,24 @@
 import csv
+class NgramManager:
+    def __init__(self, *sizes):
+        self.grams = [Ngrams(size) for size in sorted(sizes)]
+    
+    def generateLetterProbs(self, word):
+        probs = []
+        for gram in self.grams:
+            if gram.length >= len(word):
+                break
+            probs.append(gram.generateDictionaryLetterProb(word))
+        return sum(probs) / len(probs)
+    
+    def generatePhonemeProbs(self, word):
+        probs = []
+        for gram in self.grams:
+            if gram.length >= len(word):
+                break
+            probs.append(gram.generateDictionaryPhonemeProb(word))
+        return sum(probs) / len(probs)
+
 class Ngrams:
     def __init__(self, length, corpus="ipa_dicts/english-general_american.csv", occurence_table="unigram_freq.csv"):
         self.length = length

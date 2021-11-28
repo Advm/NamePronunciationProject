@@ -7,7 +7,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import math
 from random import choice
-from ngrams import Ngrams
+from ngrams import NgramManager, Ngrams
 import os
 
 
@@ -25,8 +25,8 @@ class MainModel:
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglishv4.0')
         self.root_model = tf.keras.models.load_model('RootLanguageModel')
-        self.twograms = Ngrams(2)
-        self.threegrams = Ngrams(3)
+        
+        self.ngrams = NgramManager(2, 3)
 
         # Needed to communicate/share data across threads
         self._gui = None
@@ -48,11 +48,14 @@ class MainModel:
         ipa_names = [self.ipa_model.to_ipa(name)[1:-1] for name in names]
         self.addProgress(30)
 
+        gram_letters = [round(100 - self.ngrams.generateLetterProbs(name), 2) for name in names]
+        gram_phonemes = [round(100 - self.ngrams.generatePhonemeProbs(name), 2) for name in names]
+
         # Get n-grams scores
-        bigram_letters = [round(100 - self.twograms.generateLetterProbOccurence(name), 2) for name in names]
-        bigram_phonemes = [round(100 - self.twograms.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
-        trigram_letters = [round(100 - self.threegrams.generateLetterProbOccurence(name), 2) for name in names]
-        trigram_phonemes = [round(100 - self.threegrams.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
+        # bigram_letters = [round(100 - self.twograms.generateLetterProbOccurence(name), 2) for name in names]
+        # bigram_phonemes = [round(100 - self.twograms.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
+        # trigram_letters = [round(100 - self.threegrams.generateLetterProbOccurence(name), 2) for name in names]
+        # trigram_phonemes = [round(100 - self.threegrams.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
         self.addProgress(30)
 
         # get neural net scores
@@ -67,9 +70,8 @@ class MainModel:
 
         self.addProgress(30)
 
-        final_scores = [round(((bigram_letters[i] + bigram_phonemes[i] + \
-                        trigram_letters[i] + trigram_phonemes[i])) / 4, 2)
-                        for i in range(len(bigram_letters))]
+        final_scores = [round((gram_letters[i] + gram_phonemes[i]) / 2, 2)
+                        for i in range(len(gram_letters))]
 
         # Threading Stuff - need to acquire the lock (just to make sure)
         # then write the dataframe to the result attribute before releasing
@@ -77,10 +79,12 @@ class MainModel:
         self.lock.acquire()
         self.result =  pd.concat([words[0],
                                   pd.DataFrame(final_scores),
-                                  pd.DataFrame(bigram_letters),
-                                  pd.DataFrame(bigram_phonemes),
-                                  pd.DataFrame(trigram_letters),
-                                  pd.DataFrame(trigram_phonemes),
+                                #   pd.DataFrame(bigram_letters),
+                                #   pd.DataFrame(bigram_phonemes),
+                                #   pd.DataFrame(trigram_letters),
+                                #   pd.DataFrame(trigram_phonemes),
+                                  pd.DataFrame(gram_letters),
+                                  pd.DataFrame(gram_phonemes),
                                   pd.DataFrame(nn_scores),
                                   pd.DataFrame(root_Parents)],
                                   axis=1, ignore_index=True)
