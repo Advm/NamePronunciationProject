@@ -6,17 +6,29 @@ class NgramManager:
     def generateLetterProbs(self, word):
         probs = []
         for gram in self.grams:
-            if gram.length >= len(word):
+            if len(word) == 1:
+                #if the input is a single letter, "pronoucability" = 100
+                probs.append(100)
+            if gram.length > len(word):
                 break
-            probs.append(gram.generateDictionaryLetterProb(word))
+            probs.append(gram.generateLetterProbOccurence(word))
+        if probs == []:
+            print("you need to use smaller ngrams or bigger words")
+            return 0
         return sum(probs) / len(probs)
     
     def generatePhonemeProbs(self, word):
         probs = []
         for gram in self.grams:
-            if gram.length >= len(word):
+            if len(word) == 1:
+                #if the input is a single phoneme, "pronoucability" = 100
+                probs.append(100)
+            if gram.length > len(word):
                 break
-            probs.append(gram.generateDictionaryPhonemeProb(word))
+            probs.append(gram.generatePhonemeProbOccurence(word))
+        if probs == []:
+            print("you need to use smaller ngrams or bigger words")
+            return 0
         return sum(probs) / len(probs)
 
 class Ngrams:
