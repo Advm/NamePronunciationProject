@@ -51,7 +51,7 @@ class MainModel:
         self.sendToMessageLog("IPA conversion complete", False)
 
         gram_letters = [round(100 - self.ngrams.generateLetterProbs(name), 2) for name in names]
-        gram_phonemes = [round(100 - self.ngrams.generatePhonemeProbs(name), 2) for name in names]
+        gram_phonemes = [round(100 - self.ngrams.generatePhonemeProbs(name), 2) for name in ipa_names]
 
         # Get n-grams scores
         # bigram_letters = [round(100 - self.twograms.generateLetterProbOccurence(name), 2) for name in names]
