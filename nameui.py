@@ -48,9 +48,14 @@ class RootWin:
         #sys.excepthook = self.catchException
         Tk.report_callback_exception = self.catchException
 
-        # log files - Rollover every monday at midnight -> must keep one backup (doesn't work otherwise)
-        message_handler = TimedRotatingFileHandler('message.log', when='W0', atTime=datetime.time(), backupCount=1)
-        error_handler = TimedRotatingFileHandler('error.log', when='W0', atTime=datetime.time(), backupCount=1)
+        # log files - Rollover every monday at midnight
+        # We must keep one backup (doesn't work otherwise)
+        message_handler = TimedRotatingFileHandler('message.log', when='W0',
+                                                    atTime=datetime.time(),
+                                                    backupCount=1)
+        error_handler = TimedRotatingFileHandler('error.log', when='W0',
+                                                 atTime=datetime.time(),
+                                                 backupCount=1)
         message_handler.setFormatter(RootWin.formatter)
         error_handler.setFormatter(RootWin.formatter)
 
@@ -72,6 +77,9 @@ class RootWin:
 
 
         self._intro_frame = IntroFrame(self)
+        self._gramOptions = self._intro_frame.getOptionValues()
+
+
         self._manual_frame = ManualEntryFrame(self, self._main_model, test)
         self._file_frame = FileEntryFrame(self, self._main_model, test)
         self._progress_frame = ProgressFrame(self)
@@ -223,6 +231,12 @@ class RootWin:
         @returns - None
         """
         self._doing_manual = value
+
+
+    def getOptionsValues(self):
+        self._main_model.lock.acquire()
+        self._gramOptions = self._intro_frame.getOptionsValues()
+        self._main_model.lock.release()
 
     def addProgress(self, _):
         """
@@ -409,20 +423,63 @@ class IntroFrame(GUIFrame):
         """
         super().__init__(parent, "Welcome & Options")
         self._label = ttk.Label(self._frame, text="Hello! Welcome to " \
-                                "the name pronuncation program!")
-        # for debugging
-        self._error_button = ttk.Button(self._frame, text="error",
-                                       command=self.throw_error)
-        self._label.grid(row = 0, column = 0)
-        #self._error_button.grid(row = 1, column = 0)
-        # To add options........
+                                "the name pronuncation program!\n")
 
-    def throw_error(self):
+        self._optionFrame = ttk.Labelframe(self._frame, text="Options for n-Grams:")
+
+        self._bigramCheck = IntVar()
+        self._trigramCheck = IntVar()
+        self._othergramCheck = IntVar()
+        self._othergramValue = StringVar()
+
+        self._bigramBox = ttk.Checkbutton(self._optionFrame, text = "Bigrams",
+                                          variable = self._bigramCheck)
+        self._trigramBox = ttk.Checkbutton(self._optionFrame, text = "Trigrams",
+                                           variable = self._trigramCheck)
+        self._othergramBox = ttk.Checkbutton(self._optionFrame, text = "Other grams:",
+                                             variable = self._othergramCheck,
+                                             command = self.toggleEntry)
+
+        self._otherEntry = ttk.Combobox(self._optionFrame, textvariable = self._othergramValue)
+        self._otherEntry['values'] = ('4', '5', '6', '7', '8')
+        self._otherEntry['state'] = 'disable'
+        self._otherLabel = ttk.Label(self._optionFrame, text="Values over 4 or 5 may provide inaccurate results")
+
+
+        self._label.grid(row = 0, column = 0)
+        self._optionFrame.grid(row = 1, column = 0, sticky = "EW")
+        self._bigramBox.grid(row = 0, column = 0, sticky = "W", pady = 3, padx = 2)
+        self._trigramBox.grid(row = 0, column = 1, sticky = "W", pady = 3, padx = 2)
+        self._othergramBox.grid(row = 1, column = 0, sticky="NSW", pady = 3, padx = (2, 0))
+        self._otherEntry.grid(row = 1, column = 1, pady = 3, padx = (0, 2))
+        self._otherLabel.grid(row = 2, column = 0, columnspan = 2)
+
+    def getOptionValues(self):
         """
-        Debugging method
+        Method returns a representation of the options selected by the user.
+        The representation is a dictionary of the 'n' of the n-gram
+        being the key, and the value being 0 or 1, depending on if it has been
+        selected by the user or not.
+        @params - self
+        @returns - a dictionary of string keys and int values
         """
-        raise ValueError("Hi")
-        #print("Number of threads", threading.active_count())
+        return {'2':int(self._bigramCheck.get()),
+                '3':int(self._trigramCheck.get()),
+                self.othergramValue.get():int(self._othergramCheck.get())}
+
+    def toggleEntry(self):
+        """
+        Method disables the entry field when the checkbox is turned off
+        and enables it when it is turned on
+        @params - self
+        @returns - None
+        """
+        if self._othergramCheck.get() == 0:
+            self._otherEntry['state'] = 'disable'
+        else:
+            self._otherEntry['state'] = 'readonly'
+
+
 
 
 class ManualEntryFrame(GUIFrame):
@@ -489,6 +546,7 @@ class ManualEntryFrame(GUIFrame):
                                         target=self._main_model.processInput,
                                         args=(in_data,), daemon=True))
             # run the thread
+
             self._parent.toMessageLog("Starting main program execution.",
                                         logging.INFO)
             self._parent.toErrorLog("Starting main program execution.",
@@ -510,13 +568,7 @@ class ManualEntryFrame(GUIFrame):
         self._main_model.lock.acquire()
         df = self._main_model.result
         self._main_model.lock.release()
-        # output = f"{df.iloc[0][0]}: ({df.iloc[0][1]}, {df.iloc[0][2]}, " \
-        #          f"{df.iloc[0][3]}, {df.iloc[0][4]}, {df.iloc[0][5]}, " \
-        #          f"{df.iloc[0][6]}, {df.iloc[0][7]})\n"
-        # output += "Scores are: (Combined Score, Bigrams Letters Score, " \
-        #            "Bigrams Phoneme Score, Trigrams Letter Score, " \
-        #            "Trigrams Phoneme Score, isEnglishNN Score, LanguageFamily)"
-        # messagebox.showinfo(message=output)
+
         outwin = Toplevel(self._parent.getWin())
         outwin.title("Output")
         def close():
@@ -527,9 +579,8 @@ class ManualEntryFrame(GUIFrame):
         outwin.wait_visibility() # can't grab until window appears, so we wait
         outwin.grab_set()        # ensure all input goes to our window
 
-        col_names = ('Name', 'Combined Score', 'Bigrams Letter Score',
-                     'Bigrams Phoneme Score', 'Trigrams Letter Score',
-                     'Trigrams Phoneme Score', 'isEnglishNN', 'LanguageFamilyNN')
+        col_names = ('Name', 'Combined Score', 'nGrams Letters',
+                     'nGrams Phonemes', 'isEnglishNN', 'LanguageFamilyNN')
 
 
         style = ttk.Style()
@@ -543,9 +594,7 @@ class ManualEntryFrame(GUIFrame):
 
 
         output = [df.iloc[0][0], df.iloc[0][1], df.iloc[0][2],
-                  df.iloc[0][3], df.iloc[0][4], df.iloc[0][5],
-                  df.iloc[0][6], df.iloc[0][7]]
-        #names = list(map(lambda x: str(x), output))
+                  df.iloc[0][3], df.iloc[0][4], df.iloc[0][5]]
 
         # END is from tk: tk.END
         tree.insert('', END, values=output)
@@ -760,9 +809,8 @@ class FileEntryFrame(GUIFrame):
         @return - None
         """
         self._main_model.lock.acquire()
-        columns = ['Name', 'Combined Score', 'Bigrams Letter Score',
-                   'Bigrams Phoneme Score', 'Trigrams Letter Score',
-                   'Trigrams Phoneme Score', 'isEnglishNN', 'LanguageFamilyNN']
+        columns = ('Name', 'Combined Score', 'nGrams Letters',
+                   'nGrams Phonemes', 'isEnglishNN', 'LanguageFamilyNN')
 
         self._main_model.result.to_csv(self._out_file, index=False,
                                        header=columns,
@@ -821,7 +869,15 @@ class ProgressFrame(GUIFrame):
         """
         self._progress_value.set(0)
 
+
     def addText(self, message):
+        """
+        Adds message to the text field. Removes oldest entry to make space
+        for the newest if necessary.
+        @params - self
+                - message: the text to add to the textfield
+        @returns - None
+        """
         self._text_field['state'] = 'normal'
         # If we have extra space in the text field
         if(self._textLines < self._textCapacity):
@@ -839,7 +895,6 @@ class ProgressFrame(GUIFrame):
                 last = temp
 
         self._text_field['state'] = 'disabled'
-
 
 
 def main():

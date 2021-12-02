@@ -1,8 +1,9 @@
 import csv
 class NgramManager:
-    def __init__(self, *sizes):
+    def __init__(self, mainModel, *sizes):
         self.grams = [Ngrams(size) for size in sorted(sizes)]
-    
+        self.mainModel = mainModel
+
     def generateLetterProbs(self, word):
         probs = []
         for gram in self.grams:
@@ -13,10 +14,10 @@ class NgramManager:
                 break
             probs.append(gram.generateLetterProbOccurence(word))
         if probs == []:
-            print("you need to use smaller ngrams or bigger words")
+            self.mainModel.sendToMessageLog(f"Input: {word} too small for the current set nGrams, ignoring")
             return 0
         return sum(probs) / len(probs)
-    
+
     def generatePhonemeProbs(self, word):
         probs = []
         for gram in self.grams:
@@ -27,7 +28,7 @@ class NgramManager:
                 break
             probs.append(gram.generatePhonemeProbOccurence(word))
         if probs == []:
-            print("you need to use smaller ngrams or bigger words")
+            self.mainModel.sendToMessageLog(f"Input: {word} too small for the current set nGrams, ignoring")
             return 0
         return sum(probs) / len(probs)
 
@@ -45,14 +46,14 @@ class Ngrams:
         self._generateOccurrenceDictionaries()
 
     def _generateOtherOccurrenceDictionaries(self):
-        """ Opens and creates dictionaries that map each gram in the occurence dictionary to 
+        """ Opens and creates dictionaries that map each gram in the occurence dictionary to
         how often it occurs, (most is 1, least is 0)"""
-        print("starting to generate dictionaries")
+        #print("starting to generate dictionaries")
         with open(self.occurence_table, encoding="utf8") as f:
             for row in csv.reader(f):
                 #row[0] is the word, row[1] is the phoneme, row[2] is the occurence value
                 letter_grams = self.generateNgrams(row[0])
-                phoneme_grams = self.generateNgrams(row[1]) 
+                phoneme_grams = self.generateNgrams(row[1])
                 for gram in letter_grams:
                     if self.letter_occurence_dictionary.get(gram) is None:
                         self.letter_occurence_dictionary.update({gram: row[2]})
@@ -66,12 +67,10 @@ class Ngrams:
                     else:
                         num = self.phoneme_occurence_dictionary.get(gram)
                         self.phoneme_occurence_dictionary.update({gram: num + row[2]})
-        
+
         #now we have the dictionaries with the total occurences. sort them from highest to lowest
         # and then scale them
-        print("generated non-scaled dictionaries")
-        # print(self.letter_occurence_dictionary)
-        # print(self.phoneme_occurence_dictionary)
+        #print("generated non-scaled dictionaries")
         letter_sorted = sorted(self.letter_occurence_dictionary, key=self.letter_occurence_dictionary.get)
         for i in range(len(self.letter_occurence_dictionary)):
             self.letter_occurence_dictionary.update({letter_sorted[i]: ((i + 1) / len(self.letter_occurence_dictionary))})
@@ -80,7 +79,6 @@ class Ngrams:
         for i in range(len(self.phoneme_occurence_dictionary)):
             self.phoneme_occurence_dictionary.update({phoneme_sorted[i]: ((i + 1) / len(self.phoneme_occurence_dictionary))})
 
-        print("dont think we get here")
         return
 
     def _generateOccurrenceDictionaries(self):
@@ -89,7 +87,7 @@ class Ngrams:
         count = 0
         with open(self.occurence_table, encoding="utf8") as f:
             for row in csv.reader(f):
-                #hard coded the lengths of the occurence dictionaries, will need to change later 
+                #hard coded the lengths of the occurence dictionaries, will need to change later
                 #if user wants to provide their own
                 self.letter_occurence_dictionary[row[0]] = ((333333 - count) / 333333)
 
@@ -115,12 +113,12 @@ class Ngrams:
         with open(self.corpus, encoding="utf8") as f:
                 letter_corpus = [w[1:-1] for row in csv.reader(f) \
                 for w in row[0].split(', ')]
-        with open(self.corpus, encoding="utf8") as f:       
+        with open(self.corpus, encoding="utf8") as f:
                 phoneme_corpus = [w[1:-1] for row in csv.reader(f) \
                 for w in row[1].split(', ')]
 
         for str in letter_corpus:
-            letter_grams = self.generateNgrams(str)         
+            letter_grams = self.generateNgrams(str)
             for gram in letter_grams:
                 if self.letter_dictionary.get(gram) is None:
                     self.letter_dictionary.update({gram: 1})
@@ -136,8 +134,8 @@ class Ngrams:
                 else:
                     num = self.phoneme_dictionary.get(gram)
                     self.phoneme_dictionary.update({gram: num + 1})
-   
-        return 
+
+        return
 
     def generateDictionaryLetterProb(self, word):
         """ Given a word, scale data with 100 == most occurences in the dictionary,
@@ -151,7 +149,7 @@ class Ngrams:
                 #dividing NoneType
                 continue
             average_gram_prob += self.letter_dictionary.get(gram) / max_occurences
-            
+
         if average_gram_prob != 0:
             average_gram_prob = average_gram_prob / len(grams)
         return average_gram_prob
@@ -168,7 +166,7 @@ class Ngrams:
                 #dividing NoneType
                 continue
             average_gram_prob += self.phoneme_dictionary.get(gram) / max_occurences
-            
+
         if average_gram_prob != 0:
             average_gram_prob = average_gram_prob / len(grams)
         return average_gram_prob
@@ -180,7 +178,7 @@ class Ngrams:
         if self.letter_occurence_dictionary.get(word) == None:
             #word is not in the occurence dictionary, so no scaling is done
             return prob
-        scaler = float(self.letter_occurence_dictionary[word]) 
+        scaler = float(self.letter_occurence_dictionary[word])
         prob += (100 - prob) * scaler
         return prob
 
@@ -191,7 +189,7 @@ class Ngrams:
         if self.phoneme_occurence_dictionary.get(phoneme) == None:
             #phoneme is not in the occurence dictionary, so no scaling is done
             return prob
-        scaler = float(self.phoneme_occurence_dictionary[phoneme]) 
+        scaler = float(self.phoneme_occurence_dictionary[phoneme])
         prob += (100 - prob) * scaler
         return prob
 
@@ -216,7 +214,7 @@ class Ngrams:
 #     average_gram_prob = 0
 #     for gram in grams:
 #         average_gram_prob += self.dictionary.get(gram) / self.population
-    
+
 #     if average_gram_prob != 0:
 #         average_gram_prob = average_gram_prob / len(grams)
 #     return average_gram_prob
@@ -226,7 +224,7 @@ class Ngrams:
 
 # print(bi_gram.dictionary)
     # def ngrams_word_algorithm(word):
-    #     """ Given a word, compute the tri_grams and get the average tri-gram value of the word 
+    #     """ Given a word, compute the tri_grams and get the average tri-gram value of the word
     #         from the corpus """
     #     word_trigrams = self.generateNgrams(word, 3)
     #     average_trigram_prob = 0
@@ -238,7 +236,7 @@ class Ngrams:
     #     if average_trigram_prob != 0:
     #         average_trigram_prob = average_trigram_prob / len(word_trigrams)
 
-    #     return average_trigram_prob 
+    #     return average_trigram_prob
 
     # def ngrams_phoneme_algorithm(phoneme):
     #     """ Given a phoneme, compute the z-score from the average of the bi-gram calculations

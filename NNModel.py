@@ -9,12 +9,20 @@ import os
 from to_ipa import to_ipa
 
 class convertToModelFormat():
-    def __init__(self, model, columns):
+    def __init__(self, model, columns, mainModel):
         self.model = model
         self.columns = columns
         self.columns.columns = ["Char(s)"]
+        self.mainModel = mainModel
+
+
     def convert(self, inputlist):
         output = []
+        progressDivisor = len(inputlist) % 10
+        if progressDivisor == 0:
+            progressDivisor = len(inputlist)
+
+        progressVal = 0
         for ipaword in inputlist:
             temparr = []
             temp = []
@@ -25,8 +33,7 @@ class convertToModelFormat():
                 else:
                     temp.append(0)
             temparr.append(temp)
-            #print(temparr)
-            #print(pd.read_csv('Allchars.csv')['Char'].values)
+
             answer = pd.DataFrame(temparr)
             answer.columns = self.columns['Char(s)'].values
             prediction = self.model.predict(answer)
@@ -35,6 +42,11 @@ class convertToModelFormat():
             for i in prediction[0]:
                 roundedpred.append(round(i))
             output.append(roundedpred)
+
+            progressVal += 25 / progressDivisor
+            if progressVal > 1:
+                self.mainModel.addProgress(int(progressVal))
+                progressVal = 0
 
         return output
 def get_parent_languge(arr):

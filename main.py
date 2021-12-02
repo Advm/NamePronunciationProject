@@ -25,8 +25,8 @@ class MainModel:
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglishv4.0')
         self.root_model = tf.keras.models.load_model('RootLanguageModel')
-        
-        self.ngrams = NgramManager(2, 3)
+
+        self.ngrams = NgramManager(self, 2, 3)
 
         # Needed to communicate/share data across threads
         self._gui = None
@@ -43,35 +43,58 @@ class MainModel:
         names = list(map(lambda x: x.lower(), list(words[0])))
         self.addProgress(10)
 
+        progressDivisor = len(names) % 100
+        if progressDivisor == 0:
+            progressDivisor = len(names)
+
         # <ipa_names> is a list of the same length containing IPA transcriptions of each name
         #   i.e., ipa_names[i] is an IPA transcription of names[i]
-        ipa_names = [self.ipa_model.to_ipa(name)[1:-1] for name in names]
-        
-        self.addProgress(15)
+        ipa_names = []
+        progressVal = 0
+        for name in names:
+            ipa_names.append(self.ipa_model.to_ipa(name)[1:-1])
+
+            progressVal += (15 / progressDivisor)
+            if progressVal > 1:
+                self.addProgress(int(progressVal))
+                progressVal = 0
+
         self.sendToMessageLog("IPA conversion complete", False)
 
-        gram_letters = [round(100 - self.ngrams.generateLetterProbs(name), 2) for name in names]
-        gram_phonemes = [round(100 - self.ngrams.generatePhonemeProbs(name), 2) for name in ipa_names]
+        gram_letters  = []
+        progressVal = 0
+        for name in names:
+            gram_letters.append(round(100 - self.ngrams.generateLetterProbs(name), 2))
 
-        # Get n-grams scores
-        # bigram_letters = [round(100 - self.twograms.generateLetterProbOccurence(name), 2) for name in names]
-        # bigram_phonemes = [round(100 - self.twograms.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
-        # trigram_letters = [round(100 - self.threegrams.generateLetterProbOccurence(name), 2) for name in names]
-        # trigram_phonemes = [round(100 - self.threegrams.generatePhonemeProbOccurence(name), 2) for name in ipa_names]
-        self.addProgress(20)
+            progressVal += (10 / progressDivisor)
+            if progressVal > 1:
+                self.addProgress(int(progressVal))
+                progressVal = 0
+
+        gram_phonemes = []
+        progressVal = 0
+        for name in ipa_names:
+            gram_phonemes.append(round(100 - self.ngrams.generatePhonemeProbs(name), 2))
+
+            progressVal += (10 / progressDivisor)
+            if progressVal > 1:
+                self.addProgress(int(progressVal))
+                progressVal = 0
+
         self.sendToMessageLog("N-gram calculations complete", False)
 
         # get neural net scores
         # Tnks seems to take a while?
         phonemeNN = convertToModelFormat(self.SAE_model,
-                                         pd.read_csv('Eng_2Chars.csv'))
+                                         pd.read_csv('Eng_2Chars.csv'),
+                                         self)
         rootLanguageNN = convertToModelFormat(self.root_model,
-                                         pd.read_csv('singleChars.csv'))
+                                         pd.read_csv('singleChars.csv'),
+                                         self)
         nn_scores = phonemeNN.convert(names)
         root_NN_scores = rootLanguageNN.convert(ipa_names)
         root_Parents = get_parent_languge(root_NN_scores)
 
-        self.addProgress(50)
         self.sendToMessageLog("Neural Network calculations complete", False)
 
         final_scores = [round((gram_letters[i] + gram_phonemes[i]) / 2, 2)
@@ -83,10 +106,6 @@ class MainModel:
         self.lock.acquire()
         self.result =  pd.concat([words[0],
                                   pd.DataFrame(final_scores),
-                                #   pd.DataFrame(bigram_letters),
-                                #   pd.DataFrame(bigram_phonemes),
-                                #   pd.DataFrame(trigram_letters),
-                                #   pd.DataFrame(trigram_phonemes),
                                   pd.DataFrame(gram_letters),
                                   pd.DataFrame(gram_phonemes),
                                   pd.DataFrame(nn_scores),
@@ -176,13 +195,6 @@ def main():
 if __name__ == '__main__':
     main()
 
-# with open("ipa_dicts/english-general_american.csv", encoding="utf8") as f:
-#     corpus = [w[1:-1] for row in csv.reader(f) for w in row[1].split(', ')]
-#     ngram = ngrams(corpus, 1)
-#     ipa_model = to_ipa()
-#     word = "kenny"
-#     print(f"{word}: ", ngram.generate_other_probability(ipa_model.to_ipa(word)[1:-1]))
-#     print(ipa_model.to_ipa(word))
 
 
 # def testoutput():
