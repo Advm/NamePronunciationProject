@@ -465,7 +465,7 @@ class IntroFrame(GUIFrame):
         """
         return {'2':int(self._bigramCheck.get()),
                 '3':int(self._trigramCheck.get()),
-                self.othergramValue.get():int(self._othergramCheck.get())}
+                self._othergramValue.get():int(self._othergramCheck.get())}
 
     def toggleEntry(self):
         """
