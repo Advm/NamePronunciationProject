@@ -9,6 +9,7 @@ import math
 from random import choice
 from ngrams import NgramManager, Ngrams
 import os
+import time
 
 
 class MainModel:
@@ -91,8 +92,12 @@ class MainModel:
         rootLanguageNN = convertToModelFormat(self.root_model,
                                          pd.read_csv('singleChars.csv'),
                                          self)
+        time1 = time.time()
         nn_scores = phonemeNN.convert(names)
+        time2 = time.time()
         root_NN_scores = rootLanguageNN.convert(ipa_names)
+        time3 = time.time()
+        print("DIFF OF TIMES",time2-time1, time3-time2)
         root_Parents = get_parent_languge(root_NN_scores)
 
         self.sendToMessageLog("Neural Network calculations complete", False)

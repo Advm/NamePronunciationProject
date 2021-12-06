@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
+import time
 import os
 from to_ipa import to_ipa
 
@@ -14,6 +15,7 @@ class convertToModelFormat():
         self.columns = columns
         self.columns.columns = ["Char(s)"]
         self.mainModel = mainModel
+        #print(self.columns)
 
 
     def convert(self, inputlist):
@@ -23,8 +25,10 @@ class convertToModelFormat():
             progressDivisor = len(inputlist)
 
         progressVal = 0
+        temparr = []
         for ipaword in inputlist:
-            temparr = []
+            time1 = time.time()
+            
             temp = []
             for i in self.columns['Char(s)']:
 
@@ -32,23 +36,31 @@ class convertToModelFormat():
                     temp.append(1)
                 else:
                     temp.append(0)
+            
             temparr.append(temp)
+            time2 = time.time()
+        time3 = time.time()
+        answer = pd.DataFrame(temparr)
+        answer.columns = self.columns['Char(s)'].values
+        prediction = self.model.predict(temparr)
+        print(prediction)
+        time4 = time.time()
+        roundedpred = []
+        for i in prediction:
+            temp = []
+            for j in i:
+                temp.append(j.round())
+            roundedpred.append(temp)
+        print(roundedpred)
+        time5 = time.time()
+        output.append(roundedpred)
 
-            answer = pd.DataFrame(temparr)
-            answer.columns = self.columns['Char(s)'].values
-            prediction = self.model.predict(answer)
-
-            roundedpred = []
-            for i in prediction[0]:
-                roundedpred.append(round(i))
-            output.append(roundedpred)
-
-            progressVal += 25 / progressDivisor
-            if progressVal > 1:
-                self.mainModel.addProgress(int(progressVal))
-                progressVal = 0
-
-        return output
+        progressVal += 25 / progressDivisor
+        if progressVal > 1:
+            self.mainModel.addProgress(int(progressVal))
+            progressVal = 0
+        print(ipaword, time2-time1*10000, time3-time2*10000, time4-time3*10000, time5-time4*10000)
+        return roundedpred
 def get_parent_languge(arr):
     outputs = []
     for i in arr:
