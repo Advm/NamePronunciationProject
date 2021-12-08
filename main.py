@@ -42,7 +42,6 @@ class MainModel:
 
         # <names> is a list of every name the user inputted
         names = list(map(lambda x: x.lower(), list(words[0])))
-        self.addProgress(10)
 
         progressDivisor = len(names) % 100
         if progressDivisor == 0:
@@ -67,7 +66,7 @@ class MainModel:
         for name in names:
             gram_letters.append(round(100 - self.ngrams.generateLetterProbs(name), 2))
 
-            progressVal += (10 / progressDivisor)
+            progressVal += (15 / progressDivisor)
             if progressVal > 1:
                 self.addProgress(int(progressVal))
                 progressVal = 0
@@ -77,7 +76,7 @@ class MainModel:
         for name in ipa_names:
             gram_phonemes.append(round(100 - self.ngrams.generatePhonemeProbs(name), 2))
 
-            progressVal += (10 / progressDivisor)
+            progressVal += (15 / progressDivisor)
             if progressVal > 1:
                 self.addProgress(int(progressVal))
                 progressVal = 0
