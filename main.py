@@ -92,12 +92,9 @@ class MainModel:
         rootLanguageNN = convertToModelFormat(self.root_model,
                                          pd.read_csv('singleChars.csv'),
                                          self)
-        time1 = time.time()
+
         nn_scores = phonemeNN.convert(names)
-        time2 = time.time()
         root_NN_scores = rootLanguageNN.convert(ipa_names)
-        time3 = time.time()
-        print("DIFF OF TIMES",time2-time1, time3-time2)
         root_Parents = get_parent_languge(root_NN_scores)
 
         self.sendToMessageLog("Neural Network calculations complete", False)
@@ -128,6 +125,19 @@ class MainModel:
         @returns - None
         """
         self._gui = gui_win
+
+
+    def setNGrams(self, nlist):
+        """
+        Method used to set the object's NGram's manager object so the user
+        can select which n they want to run with Ngrams. (This method cannot
+        be run by the GUI while in a multithreaded state, that would
+        probably create issues)
+        @params - self
+                - nlist: a list of ints to pass to the NGrams manager constructor
+        @returns - None
+        """
+        self.ngrams = NgramManager(self, *nlist)
 
     def addProgress(self, value):
         """
@@ -163,15 +173,9 @@ class MainModel:
     def test_gui(self, words):
         """
         Method used to test the gui without running the entire program.
+        To use, on the line root = RootWin(model), add a true parameter
+        to the RootWin constructor.
         """
-        print(words)
-        time.sleep(5)
-        column2 = pd.DataFrame([2] * len(words.index))
-        self.lock.acquire()
-        self.result = pd.concat([words, column2], axis=1, ignore_index=True)
-        self.lock.release()
-        self.addProgress(100)
-        #self.sendToMessageLog("Hi", False)
         self._gui.generateEvent("<<ThreadEnded>>")
 
 def main():

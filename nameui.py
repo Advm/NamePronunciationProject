@@ -77,8 +77,6 @@ class RootWin:
 
 
         self._intro_frame = IntroFrame(self)
-        self._gramOptions = self._intro_frame.getOptionValues()
-
 
         self._manual_frame = ManualEntryFrame(self, self._main_model, test)
         self._file_frame = FileEntryFrame(self, self._main_model, test)
@@ -144,6 +142,7 @@ class RootWin:
         """
         self._manual_frame.disable()
         self._file_frame.disable()
+        self._intro_frame.disableApply()
 
     def enableEntry(self):
         """
@@ -154,6 +153,7 @@ class RootWin:
         """
         self._manual_frame.enable()
         self._file_frame.enable()
+        self._intro_frame.enableApply()
 
     def generateEvent(self, event):
         """
@@ -233,10 +233,35 @@ class RootWin:
         self._doing_manual = value
 
 
-    def getOptionsValues(self):
-        self._main_model.lock.acquire()
-        self._gramOptions = self._intro_frame.getOptionsValues()
-        self._main_model.lock.release()
+    def applyOptions(self):
+        """
+        Method ran when the IntroFrame's apply button is pressed, which
+        is enabled only in a single-threaded state. This method examines
+        the ngrams options selected by the user and calls the main model's
+        setNGrams method to apply those changes.
+        @params - self
+        @returns - None
+        """
+        dict = self._intro_frame.getOptionValues()
+        waitWin = Toplevel(self._win)
+        waitWin.title("Applying Options...")
+        waitLabel = ttk.Label(waitWin, text = "This may take a moment. Please wait.",
+                              font=(None, 18))
+        waitLabel.grid(row = 0, column = 0, padx = 5, pady = 5)
+
+        waitLabel.update()
+        waitWin.grab_set()        # ensure all input goes to the wait window
+
+        result = []
+        for key, value in dict.items():
+            if value == 1:
+                result.append(key)
+
+        self._main_model.setNGrams(result)
+        waitWin.grab_release()
+        waitWin.destroy()
+
+
 
     def addProgress(self, _):
         """
@@ -430,7 +455,11 @@ class IntroFrame(GUIFrame):
         self._bigramCheck = IntVar()
         self._trigramCheck = IntVar()
         self._othergramCheck = IntVar()
-        self._othergramValue = StringVar()
+        self._othergramValue = IntVar()
+        self._bigramCheck.set(1)
+        self._trigramCheck.set(1)
+        self._othergramValue.set(4)
+
 
         self._bigramBox = ttk.Checkbutton(self._optionFrame, text = "Bigrams",
                                           variable = self._bigramCheck)
@@ -441,9 +470,11 @@ class IntroFrame(GUIFrame):
                                              command = self.toggleEntry)
 
         self._otherEntry = ttk.Combobox(self._optionFrame, textvariable = self._othergramValue)
-        self._otherEntry['values'] = ('4', '5', '6', '7', '8')
+        self._otherEntry['values'] = ('4', '5', '6')
         self._otherEntry['state'] = 'disable'
-        self._otherLabel = ttk.Label(self._optionFrame, text="Values over 4 or 5 may provide inaccurate results")
+        self._otherLabel = ttk.Label(self._optionFrame, text="Values over 4 may provide inaccurate results")
+
+        self._applyButton = ttk.Button(self._optionFrame, text="Apply", command=self._parent.applyOptions)
 
 
         self._label.grid(row = 0, column = 0)
@@ -452,7 +483,8 @@ class IntroFrame(GUIFrame):
         self._trigramBox.grid(row = 0, column = 1, sticky = "W", pady = 3, padx = 2)
         self._othergramBox.grid(row = 1, column = 0, sticky="NSW", pady = 3, padx = (2, 0))
         self._otherEntry.grid(row = 1, column = 1, pady = 3, padx = (0, 2))
-        self._otherLabel.grid(row = 2, column = 0, columnspan = 2)
+        self._otherLabel.grid(row = 2, column = 0)
+        self._applyButton.grid(row = 2, column = 1)
 
     def getOptionValues(self):
         """
@@ -463,9 +495,26 @@ class IntroFrame(GUIFrame):
         @params - self
         @returns - a dictionary of string keys and int values
         """
-        return {'2':int(self._bigramCheck.get()),
-                '3':int(self._trigramCheck.get()),
-                self._othergramValue.get():int(self._othergramCheck.get())}
+        result = {2:int(self._bigramCheck.get()),
+                  3:int(self._trigramCheck.get()),
+                  self._othergramValue.get():int(self._othergramCheck.get())}
+        return result
+
+    def disableApply(self):
+        """
+        Method to disable the Apply button (occurs when in a multi-thread state)
+        @params - self
+        @returns - None
+        """
+        self._applyButton.configure(state='disable')
+
+    def enableApply(self):
+        """
+        Method to enable the Apply button (occurs when in a single-thread state)
+        @params - self
+        @returns - None
+        """
+        self._applyButton.configure(state='enable')
 
     def toggleEntry(self):
         """
@@ -895,16 +944,3 @@ class ProgressFrame(GUIFrame):
                 last = temp
 
         self._text_field['state'] = 'disabled'
-
-
-def main():
-    """
-    Main just sets up the root window and calls it's mainloop.
-    """
-
-    root = RootWin(print_ret)
-    root.mainLoop()
-
-
-if __name__ == "__main__":
-    main()

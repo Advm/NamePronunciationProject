@@ -27,8 +27,7 @@ class convertToModelFormat():
         progressVal = 0
         temparr = []
         for ipaword in inputlist:
-            time1 = time.time()
-            
+
             temp = []
             for i in self.columns['Char(s)']:
 
@@ -36,31 +35,32 @@ class convertToModelFormat():
                     temp.append(1)
                 else:
                     temp.append(0)
-            
+
             temparr.append(temp)
-            time2 = time.time()
-        time3 = time.time()
+            progressVal += 25 / progressDivisor
+            if progressVal > 1:
+                self.mainModel.addProgress(int(progressVal))
+                progressVal = 0
+
+
         answer = pd.DataFrame(temparr)
         answer.columns = self.columns['Char(s)'].values
+
+        # Most of the runtime, presumably. Unpack?
         prediction = self.model.predict(temparr)
-        print(prediction)
-        time4 = time.time()
+
+
         roundedpred = []
         for i in prediction:
             temp = []
             for j in i:
                 temp.append(j.round())
             roundedpred.append(temp)
-        print(roundedpred)
-        time5 = time.time()
+
         output.append(roundedpred)
 
-        progressVal += 25 / progressDivisor
-        if progressVal > 1:
-            self.mainModel.addProgress(int(progressVal))
-            progressVal = 0
-        print(ipaword, time2-time1*10000, time3-time2*10000, time4-time3*10000, time5-time4*10000)
         return roundedpred
+
 def get_parent_languge(arr):
     outputs = []
     for i in arr:
