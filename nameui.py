@@ -1,3 +1,8 @@
+"""
+Gwendolyn Urbanczyk, Tkinter GUI for the Name Pronunciation Program
+12/8/21
+"""
+
 import sys
 import pandas as pd
 from os import path
