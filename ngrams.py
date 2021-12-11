@@ -4,29 +4,35 @@ class NgramManager:
         self.grams = [Ngrams(size) for size in sorted(sizes)]
         self.mainModel = mainModel
 
-    def generateLetterProbs(self, word):
+    def generateLetterProbs(self, words):
         probs = []
-        for gram in self.grams:
-            if len(word) == 1:
-                #if the input is a single letter, "pronoucability" = 100
-                probs.append(100)
-            if gram.length > len(word):
-                break
-            probs.append(gram.generateLetterProbOccurence(word))
+        #to deal with if name is multiple words
+        words = words.split()
+        for word in words:
+            for gram in self.grams:
+                if len(word) == 1:
+                    #if the input is a single letter, "pronoucability" = 100
+                    probs.append(100)
+                if gram.length > len(word):
+                    break
+                probs.append(gram.generateLetterProbOccurence(word))
         if probs == []:
             self.mainModel.sendToMessageLog(f"Input: {word} too small for the current set nGrams, ignoring")
             return 0
         return sum(probs) / len(probs)
 
-    def generatePhonemeProbs(self, word):
+    def generatePhonemeProbs(self, words):
         probs = []
-        for gram in self.grams:
-            if len(word) == 1:
-                #if the input is a single phoneme, "pronoucability" = 100
-                probs.append(100)
-            if gram.length > len(word):
-                break
-            probs.append(gram.generatePhonemeProbOccurence(word))
+        #to deal with if name is multiple words
+        words = words.split()
+        for word in words:
+            for gram in self.grams:
+                if len(word) == 1:
+                    #if the input is a single phoneme, "pronoucability" = 100
+                    probs.append(100)
+                if gram.length > len(word):
+                    break
+                probs.append(gram.generatePhonemeProbOccurence(word))
         if probs == []:
             self.mainModel.sendToMessageLog(f"Input: {word} too small for the current set nGrams, ignoring")
             return 0
