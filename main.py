@@ -45,7 +45,7 @@ class MainModel:
         names = list(map(lambda x: x.lower().strip(), list(words[0])))
         self.addProgress(10)
 
-        progressDivisor = len(names) % 100
+        progressDivisor = len(names)
         if progressDivisor == 0:
             progressDivisor = len(names)
 
@@ -105,10 +105,10 @@ class MainModel:
         combinedNGrams = [round((gram_letters[i] + gram_phonemes[i]) / 2, 2)
                         for i in range(len(gram_letters))]
 
-        final_scores = get_combined_output(self.combine_model, combinedNGrams,gram_letters,gram_phonemes,nn_scores)
-
+        final_scores = get_combined_output(self.combine_model, combinedNGrams, gram_letters, gram_phonemes, nn_scores)
+        final_scores = [round(x, 2) for x in final_scores]
         self.sendToMessageLog("Final score calculations complete", False)
-        
+
         # Threading Stuff - need to acquire the lock (just to make sure)
         # then write the dataframe to the result attribute before releasing
         # the lock and firing the end thread virtual event

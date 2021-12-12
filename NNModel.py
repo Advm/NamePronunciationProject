@@ -22,7 +22,7 @@ class convertToModelFormat():
         """Takes in inputs, and uses the columns given by preselected csv to run on the matching model
         """
         output = []
-        progressDivisor = len(inputlist) % 10
+        progressDivisor = len(inputlist)
         if progressDivisor == 0:
             progressDivisor = len(inputlist)
 
@@ -102,7 +102,5 @@ def get_combined_output(model, final_scores, gram_letters, gram_phonemes, nn_sco
             else:
                 #Scaled by 33 to make results spread wider across all values between 0-100, not centered around 50
                 holder+=[(((j-MEAN)/STDDEV)*33) + 50]
-   
-    return holder
 
- 
+    return holder
