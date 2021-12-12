@@ -1,7 +1,7 @@
 from nameui import *
 from to_ipa import to_ipa
 import csv
-from NNModel import convertToModelFormat, get_parent_languge
+from NNModel import convertToModelFormat, get_parent_languge, get_combined_output
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -26,6 +26,7 @@ class MainModel:
         # SAE is "Standard American English"
         self.SAE_model = tf.keras.models.load_model('IsAmericanEnglishv4.0')
         self.root_model = tf.keras.models.load_model('RootLanguageModel')
+        self.combine_model = tf.keras.models.load_model('Combine Scores Model')
 
         self.ngrams = NgramManager(self, 2, 3)
 
@@ -99,9 +100,15 @@ class MainModel:
 
         self.sendToMessageLog("Neural Network calculations complete", False)
 
-        final_scores = [round((gram_letters[i] + gram_phonemes[i]) / 2, 2)
+
+
+        combinedNGrams = [round((gram_letters[i] + gram_phonemes[i]) / 2, 2)
                         for i in range(len(gram_letters))]
 
+        final_scores = get_combined_output(self.combine_model, combinedNGrams,gram_letters,gram_phonemes,nn_scores)
+
+        self.sendToMessageLog("Final score calculations complete", False)
+        
         # Threading Stuff - need to acquire the lock (just to make sure)
         # then write the dataframe to the result attribute before releasing
         # the lock and firing the end thread virtual event
