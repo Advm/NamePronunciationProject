@@ -11,7 +11,7 @@ pip install sklearn
 pip install g2p-en
 
 ::git clone https://github.com/vgautam/arpabet-syllabifier.git
-cd arpabet-syllabifier
+cd arpabet-syllabifier-master
 python setup.py install
 cd ..
 PAUSE
