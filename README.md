@@ -12,6 +12,7 @@ arpabet-syllabifier (https://github.com/vgautam/arpabet-syllabifier).
 These can be installed with the GetDepenencides command, use the .command file if on linux or
 mac, and .bat on windows. To do so, you must have python3 installed (see how here: https://www.python.org/downloads/). For installation to work properly, you must also download the files here: https://github.com/vgautam/arpabet-syllabifier.git and extract the arpabet-syllabifier file into the same file as the GetDepenencides file.
 
+ON WINDOWS YOU MUST RUN THE BAT FILE AS AN ADMINISTRATOR OTHERWISE IT WILL NOT WORK. Right click the file and select run as administrator. When a popup appears, select yes and ok. 
 
 
 To run the program, double-click the run.command or run.bat file, 
