@@ -1,3 +1,6 @@
+cd %~dp0
+regedit "Remove 260 Character Path Limit.reg"
+
 pip install nltk
 pip install inflect
 pip install Distance
