@@ -12,6 +12,6 @@ pip install g2p-en
 
 ::git clone https://github.com/vgautam/arpabet-syllabifier.git
 cd arpabet-syllabifier-master
-python setup.py install
+python setup.py install --user
 cd ..
 PAUSE
